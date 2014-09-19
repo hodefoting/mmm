@@ -5,6 +5,14 @@
 #include <stdint.h>
 
 typedef struct Ufb_ Ufb;
+typedef struct _UfbRectangle UfbRectangle;
+
+struct _UfbRectangle {
+  int x;
+  int y;
+  int width;
+  int height;
+};
 
 typedef enum {
   UFB_FLAG_DEFAULT = 0,
