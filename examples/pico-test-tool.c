@@ -3,7 +3,7 @@
  * enough that it doesn't even rely on the ufb .c file
  */
 
-#include "../lib/ufb.c"
+#include "../lib/mmfb.c"
 
 int main ()
 {

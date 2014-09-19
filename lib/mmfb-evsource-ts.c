@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "ufb-evsource.h"
+#include "mmfb-evsource.h"
 
 /* written to work with the zforce ir touchscreen of a kobo glo,
  * probably works with a range of /dev/input/event classs of
