@@ -2,6 +2,7 @@
  * integrating with the oc display server.
  */
 #include "mmfb.h"
+#include "mmfb-pset.h"
 //#include "pset.h"
 #include <stdlib.h>
 #include <stdio.h>

@@ -981,6 +981,7 @@ static Ufb *ufb_new_shm (int width, int height, void *babl_format)
   fb->shm->fb.height = fb->height;
   fb->shm->fb.flip_state = UFB_NEUTRAL;
   fb->shm->header.pid = getpid ();
+  fprintf (stderr, "pidset\n");
   ufb_remap (fb);
 
   return fb;

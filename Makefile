@@ -3,7 +3,7 @@ LIB_PKGMODULES=cairo gtk+-3.0 sdl
 PROJECT_NAME=mmfb
 PROJECT_DESCRIPTION=mmfb
 SYMBOL_PREFIX=
-CFLAGS=-Wall -Wextra
+CFLAGS=-Wall -Wextra -O0
 
 LIB_LD_FLAGS=-lutil -lm
 
