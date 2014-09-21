@@ -754,6 +754,19 @@ Ufb *ufb_new (int width, int height, UfbFlag flags, void *babl_format)
 {
   Ufb *fb = NULL;
 
+  if (!getenv ("UFB_PATH"))
+  {
+    switch (fork())
+    {
+      case 0: /* child */
+        execlp ("mmfb", "mmfb", NULL);
+      case -1:
+        fprintf (stderr, "fork failed\n");
+        return 0;
+    }
+    setenv ("UFB_PATH", "/tmp/ufb", 1);
+  }
+
   {
     int is_compositor = (getenv ("UFB_COMPOSITOR") != NULL);
     const char *env = getenv ("UFB_PATH");

@@ -23,8 +23,9 @@
 #define UFB_STRIDE          0x3b8
 #define UFB_FB_OFFSET       0x3bc
 #define UFB_FLIP_STATE      0x3c0
-#define UFB_SIZE            131124  // too low and it will conflict with pcm-data
+//#define UFB_SIZE            131124  // too low and it will conflict with pcm-data
 
+#define UFB_SIZE 0x41548
 #define UFB_FLIP_INIT       0
 #define UFB_FLIP_NEUTRAL    1
 #define UFB_FLIP_DRAWING    2
