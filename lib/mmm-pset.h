@@ -144,7 +144,6 @@ inline static unsigned char *mmm_pix_pset_mono  (
   return pix + bpp;
 }
 
-#define MMM_PCM_BUFFER_SIZE  8192
 
 #include <stdio.h>
 

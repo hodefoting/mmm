@@ -1,3 +1,17 @@
+/*
+ * 2014 (c) Øyvind Kolås
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
 #ifndef _BSD_SOURCE
 #define _BSD_SOURCE
 #endif
@@ -32,6 +46,8 @@ typedef struct _MmmShm MmmShm;
 
 #define MMM_AUDIO_BUFFER_SIZE  4096
 
+#define U64_CONSTANT(str) (*((uint64_t*)str))
+
 static char *MMM_magic    = "MMM ░ ";
 static char *MMM_fb       = "FB      ";
 static char *MMM_events   = "EVENTS  ";
@@ -43,6 +59,7 @@ typedef struct MmmBlock {
   uint64_t type;
   uint32_t length;
   uint32_t next;
+  uint8_t  data[];
 } MmmBlock;
 
 /* In the comments, a C means the client (generally) writes and a H means the
@@ -131,13 +148,13 @@ struct Mmm_
   int          bpp;      /* do not move, inline function in header ..*/
   int          stride;   /* .. depends on position of bpp/stride */
 
-  uint8_t     *fb;   /* pointer to actual pixels */
+  uint8_t     *fb;       /* pointer to actual pixels */
   int          width;
   int          height;
   int          mapped_size;
 
-  void        *format;  /* babl format */
-                        /* XXX: add format for frontbuffer*/
+  void        *format;   /* babl format */
+                         /* XXX: add format for frontbuffer*/
 
   char        *path;
   int          fd;
@@ -145,6 +162,10 @@ struct Mmm_
   MmmShm      *shm;
 
   int          compositor_side;
+
+  MmmBlock    *pcm;
+  MmmBlock    *events;
+  MmmBlock    *messages;
 };
 
 static void mmm_remap (Mmm *fb);
@@ -155,7 +176,6 @@ int mmm_get_bytes_per_pixel (Mmm *fb)
 }
 
 static struct timeval start_time;
-#define usecs(time) ((time.tv_sec - start_time.tv_sec) * 1000000 + time.tv_usec)
 
 static void mmm_init_ticks (void)
 {
@@ -167,19 +187,14 @@ static void mmm_init_ticks (void)
   gettimeofday (&start_time, NULL);
 }
 
-inline static long ticks (void)
+long mmm_ticks (void)
 {
   struct timeval measure_time;
   mmm_init_ticks ();
   gettimeofday (&measure_time, NULL);
+#define usecs(time) ((time.tv_sec - start_time.tv_sec) * 1000000 + time.tv_usec)
   return usecs (measure_time) - usecs (start_time);
-}
-
 #undef usecs
-
-long mmm_ticks (void)
-{
-  return ticks ();
 }
 
 int
