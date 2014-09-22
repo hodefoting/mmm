@@ -9,7 +9,6 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <SDL/SDL.h>
-#include "mmfb-backend.h"
 #include <sys/stat.h>
 #include <errno.h>
 #include "host.h"
