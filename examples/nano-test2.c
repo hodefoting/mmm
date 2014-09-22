@@ -85,86 +85,86 @@ static inline int frag_hack (int x, int y,int foo)
   return (x ^ y) + foo;
 }
 
-void fill_random (Ufb *fb, int n)
+void fill_random (Mmm *fb, int n)
 {
   int x, y;
   unsigned char *buffer;
   int width, height, stride;
   int bpp;
 
-  buffer = ufb_get_buffer_write (fb, &width, &height, &stride, NULL);
+  buffer = mmm_get_buffer_write (fb, &width, &height, &stride, NULL);
 
-  bpp = ufb_get_bytes_per_pixel (fb);
+  bpp = mmm_get_bytes_per_pixel (fb);
 
   for (y = 0; y < height; y++)
   {
-    unsigned char *pix = ufb_get_pix (fb, buffer, 0, y);
+    unsigned char *pix = mmm_get_pix (fb, buffer, 0, y);
     for (x = 0; x < width; x++)
     {
       int val = fastrand()&0xff;
-      pix = ufb_pix_pset (fb, pix, bpp, x, y, val, val, val, 255);
+      pix = mmm_pix_pset (fb, pix, bpp, x, y, val, val, val, 255);
     }
   }
 
-  ufb_write_done (fb, 0, 0, -1, -1);
+  mmm_write_done (fb, 0, 0, -1, -1);
 }
 
-void blank_it (Ufb *fb, int n)
+void blank_it (Mmm *fb, int n)
 {
   int x, y;
   unsigned char *buffer;
   int width, height, stride;
   int bpp;
 
-  buffer = ufb_get_buffer_write (fb, &width, &height, &stride, NULL);
+  buffer = mmm_get_buffer_write (fb, &width, &height, &stride, NULL);
 
-  bpp = ufb_get_bytes_per_pixel (fb);
+  bpp = mmm_get_bytes_per_pixel (fb);
 
   for (y = 0; y < height; y++)
   {
-    unsigned char *pix = ufb_get_pix (fb, buffer, 0, y);
+    unsigned char *pix = mmm_get_pix (fb, buffer, 0, y);
     for (x = 0; x < width; x++)
     {
       int val = 255;
-      pix = ufb_pix_pset (fb, pix, bpp, x, y, val, val, val, 255);
+      pix = mmm_pix_pset (fb, pix, bpp, x, y, val, val, val, 255);
     }
   }
 
-  ufb_write_done (fb, 0, 0, -1, -1);
+  mmm_write_done (fb, 0, 0, -1, -1);
 }
 
 
-void fill_render (Ufb *fb, Fragment fragment, int foo)
+void fill_render (Mmm *fb, Fragment fragment, int foo)
 {
   int x, y;
   unsigned char *buffer;
   int width, height, stride;
   int bpp;
 
-  buffer = ufb_get_buffer_write (fb, &width, &height, &stride, NULL);
+  buffer = mmm_get_buffer_write (fb, &width, &height, &stride, NULL);
 
-  bpp = ufb_get_bytes_per_pixel (fb);
+  bpp = mmm_get_bytes_per_pixel (fb);
 
   for (y = 0; y < height; y++)
   {
-    unsigned char *pix = ufb_get_pix (fb, buffer, 0, y);
+    unsigned char *pix = mmm_get_pix (fb, buffer, 0, y);
     int u, v;
     u = 0 - (tx-width/2); v = y - (ty-height/2);
     for (x = 0; x < width; x++, u++)
     {
       int val = fragment (u, v, foo);
-      pix = ufb_pix_pset (fb, pix, bpp, x, y, val, val, val, 255);
+      pix = mmm_pix_pset (fb, pix, bpp, x, y, val, val, val, 255);
     }
   }
 
-  ufb_write_done (fb, 0, 0, -1, -1);
+  mmm_write_done (fb, 0, 0, -1, -1);
 }
 
-void event_handling (Ufb *fb)
+void event_handling (Mmm *fb)
 {
-  while (ufb_has_event (fb))
+  while (mmm_has_event (fb))
     {
-      const char *event = ufb_get_event (fb);
+      const char *event = mmm_get_event (fb);
       float x = 0, y = 0;
       const char *p;
       p = strchr (event, ' ');
@@ -181,7 +181,7 @@ void event_handling (Ufb *fb)
     }
 }
 
-void ghostbuster (Ufb *fb)
+void ghostbuster (Mmm *fb)
 {
   int i;
   for (i = 0; i < 3; i++)
@@ -193,7 +193,7 @@ void ghostbuster (Ufb *fb)
 
 int main ()
 {
-  Ufb *fb = ufb_new (256, 128, 0, NULL);
+  Mmm *fb = mmm_new (256, 128, 0, NULL);
   int j;
   if (!fb)
     {
@@ -201,30 +201,30 @@ int main ()
       return -1;
     }
 
-  ufb_pcm_set_sample_rate (fb, freq);
-  ufb_pcm_set_format (fb, UFB_s16);
+  mmm_pcm_set_sample_rate (fb, freq);
+  mmm_pcm_set_format (fb, MMM_s16);
 
-  fprintf (stderr, "%i %i\n", ufb_pcm_get_free_frames (fb),
-                              ufb_pcm_get_frame_chunk (fb));
+  fprintf (stderr, "%i %i\n", mmm_pcm_get_free_frames (fb),
+                              mmm_pcm_get_frame_chunk (fb));
 
   void *data = "asdfasdfasdfasdfasdasdfasdasdfasdff";
-  ufb_pcm_write (fb, data, 1);
+  mmm_pcm_write (fb, data, 1);
 
-  fprintf (stderr, "%i %i\n", ufb_pcm_get_free_frames (fb),
-                              ufb_pcm_get_frame_chunk (fb));
+  fprintf (stderr, "%i %i\n", mmm_pcm_get_free_frames (fb),
+                              mmm_pcm_get_frame_chunk (fb));
 
-  ufb_pcm_write (fb, data, 10);
+  mmm_pcm_write (fb, data, 10);
 
-  fprintf (stderr, "%i %i\n", ufb_pcm_get_free_frames (fb),
-                              ufb_pcm_get_frame_chunk (fb));
+  fprintf (stderr, "%i %i\n", mmm_pcm_get_free_frames (fb),
+                              mmm_pcm_get_frame_chunk (fb));
 
-  ufb_pcm_write (fb, data, 22);
+  mmm_pcm_write (fb, data, 22);
 
-  //ufb_eink_mono (fb);
+  //mmm_eink_mono (fb);
 
-  //ufb_set_size (fb, 256, 128);
-  W = ufb_get_width (fb);
-  H = ufb_get_height (fb);
+  //mmm_set_size (fb, 256, 128);
+  W = mmm_get_width (fb);
+  H = mmm_get_height (fb);
 
   tx = W/2;
   ty = H/2;
@@ -246,9 +246,9 @@ int main ()
       }
     {
 
-  //ufb_set_size (fb, 64, 64);
-  W = ufb_get_width (fb);
-  H = ufb_get_height (fb);
+  //mmm_set_size (fb, 64, 64);
+  W = mmm_get_width (fb);
+  H = mmm_get_height (fb);
 
   tx = W/2;
   ty = H/2;
@@ -257,7 +257,7 @@ int main ()
     for (i = 96; i < 128; i+=2)
       {
         fill_render (fb, frag_ripple_interference, i);
-        ufb_pcm_write (fb, data, 17);
+        mmm_pcm_write (fb, data, 17);
         event_handling (fb);
       }
 
@@ -269,14 +269,14 @@ int main ()
     for (i = 0; i < 32; i+=1)
       {
         fill_render (fb, frag_hack2, 64-i);
-        ufb_pcm_write (fb, data, 7);
+        mmm_pcm_write (fb, data, 7);
         event_handling (fb);
       }
 
     for (i = 0; i < 32; i+=1)
       {
         fill_render (fb, frag_hack, i);
-        ufb_pcm_write (fb, data, 17);
+        mmm_pcm_write (fb, data, 17);
         event_handling (fb);
       }
 
@@ -285,13 +285,13 @@ int main ()
     for (i = 0; i < 74; i+=1)
     {
         fill_render (fb, frag_ripple, i * 1000);
-        ufb_pcm_write (fb, data, 11);
+        mmm_pcm_write (fb, data, 11);
         event_handling (fb);
     }
     for (i = 74; i >0; i-=2)
     {
         fill_render (fb, frag_ripple, i * 1000);
-        ufb_pcm_write (fb, data, 5);
+        mmm_pcm_write (fb, data, 5);
         event_handling (fb);
     }
     ghostbuster (fb);
@@ -299,7 +299,7 @@ int main ()
     event_handling (fb);
   }
 
-  ufb_destroy (fb);
+  mmm_destroy (fb);
   fprintf (stderr, "nano-test done!\n");
   return 0;
 }

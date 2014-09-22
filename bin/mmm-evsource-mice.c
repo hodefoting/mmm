@@ -27,7 +27,7 @@ typedef struct Mice
 
 Mice *_mrg_evsrc_coord = NULL;
 
-void _ufb_get_coords (Ufb *ufb, double *x, double *y)
+void _mmm_get_coords (Mmm *mmm, double *x, double *y)
 {
   if (!_mrg_evsrc_coord)
     return;
@@ -40,7 +40,7 @@ void _ufb_get_coords (Ufb *ufb, double *x, double *y)
 static Mice  mice;
 static Mice* mrg_mice_this = &mice;
 
-static int ufb_evsource_mice_init ()
+static int mmm_evsource_mice_init ()
 {
   unsigned char reset[]={0xff};
   /* need to detect which event */
@@ -142,7 +142,7 @@ static EvSource ev_src_mice = {
 
 EvSource *evsource_mice_new (void)
 {
-  if (ufb_evsource_mice_init () == 0)
+  if (mmm_evsource_mice_init () == 0)
     {
       mrg_mice_this->x = 0;
       mrg_mice_this->y = 0;

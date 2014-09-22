@@ -36,7 +36,7 @@ static inline int a_dither(int x, int y)
   //return ((x+    (y+(y<<2)+(y<<3)+(y<<8)))*3213) & 0xff;
 }
 
-static inline void ufb_dither_mono (int x, int y, 
+static inline void mmm_dither_mono (int x, int y, 
                                     int *red,
                                     int *green,
                                     int *blue)
@@ -53,7 +53,7 @@ static inline void ufb_dither_mono (int x, int y,
   if(blue)*blue = value; 
 }
 
-static inline void ufb_dither_rgb (int x, int y, 
+static inline void mmm_dither_rgb (int x, int y, 
                                    int *red,
                                    int *green,
                                    int *blue)
@@ -74,15 +74,15 @@ static inline void ufb_dither_rgb (int x, int y,
   CLAMP(*blue, 0, 255);
 }
 
-static inline void ufb_dither_generic (int x, int y, 
+static inline void mmm_dither_generic (int x, int y, 
                                        int *red,
                                        int *green,
                                        int *blue)
 {
   if (eink_is_mono)
-    ufb_dither_mono (x, y, red, green, blue);
+    mmm_dither_mono (x, y, red, green, blue);
   else
-    ufb_dither_rgb (x, y, red, green, blue);
+    mmm_dither_rgb (x, y, red, green, blue);
 }
 
 #undef CLAMP
@@ -97,8 +97,8 @@ static inline void ufb_dither_generic (int x, int y,
 #define RGBAu8_SET(p,r,g,b,a) do{ p[0] = (r); p[1] = (g); p[2] = (b); p[3] = (a); }while(0)
   
 
-inline static unsigned char *ufb_pix_pset_nodither  (
-    Ufb *fb, unsigned char *pix, int bpp, int x, int y,
+inline static unsigned char *mmm_pix_pset_nodither  (
+    Mmm *fb, unsigned char *pix, int bpp, int x, int y,
     int red, int green, int blue, int alpha)
 {
   switch (bpp)
@@ -119,12 +119,12 @@ inline static unsigned char *ufb_pix_pset_nodither  (
   return pix + bpp;
 }
 
-inline static unsigned char *ufb_pix_pset_mono  (
-    Ufb *fb, unsigned char *pix, int bpp, int x, int y,
+inline static unsigned char *mmm_pix_pset_mono  (
+    Mmm *fb, unsigned char *pix, int bpp, int x, int y,
     int red, int green, int blue, int alpha)
 {
   int mono = (red+green+blue)/3;
-  ufb_dither_mono (x, y, &mono, &mono, &mono);
+  mmm_dither_mono (x, y, &mono, &mono, &mono);
 
   switch (bpp)
   {
@@ -144,16 +144,16 @@ inline static unsigned char *ufb_pix_pset_mono  (
   return pix + bpp;
 }
 
-#define UFB_PCM_BUFFER_SIZE  8192
+#define MMM_PCM_BUFFER_SIZE  8192
 
 #include <stdio.h>
 
-inline static unsigned char *ufb_pix_pset (
-    Ufb *fb, unsigned char *pix, int bpp, int x, int y,
+inline static unsigned char *mmm_pix_pset (
+    Mmm *fb, unsigned char *pix, int bpp, int x, int y,
     int red, int green, int blue, int alpha)
 {
-  //fprintf (stderr, "%i %i %i %i\n", x, y, ufb_get_width (fb), ufb_get_height (fb));
-  ufb_dither_rgb (x, y, &red, &green , &blue);
+  //fprintf (stderr, "%i %i %i %i\n", x, y, mmm_get_width (fb), mmm_get_height (fb));
+  mmm_dither_rgb (x, y, &red, &green , &blue);
 
   switch (bpp)
   {
@@ -173,7 +173,7 @@ inline static unsigned char *ufb_pix_pset (
   return pix + bpp;
 }
 
-inline static unsigned char *ufb_get_pix (Ufb *fb, unsigned char *buffer, int x, int y)
+inline static unsigned char *mmm_get_pix (Mmm *fb, unsigned char *buffer, int x, int y)
 {
   /* this works, because bpp is the first member of fb, quickly getting this
    * in a generic function like 
@@ -186,18 +186,18 @@ inline static unsigned char *ufb_get_pix (Ufb *fb, unsigned char *buffer, int x,
 
 /* a sufficiently fast pixel setter
  */
-inline static void ufb_pset (Ufb *fb, unsigned char *buffer, int x, int y, int red, int green, int blue, int alpha)
+inline static void mmm_pset (Mmm *fb, unsigned char *buffer, int x, int y, int red, int green, int blue, int alpha)
 {
   int bpp =    ((int*)(fb))[0];
-  unsigned char *pix = ufb_get_pix (fb, buffer, x, y);
-  ufb_pix_pset (fb, pix, bpp, x, y, red, green, blue, alpha);
+  unsigned char *pix = mmm_get_pix (fb, buffer, x, y);
+  mmm_pix_pset (fb, pix, bpp, x, y, red, green, blue, alpha);
 }
 
-inline static void ufb_pset_mono (Ufb *fb, unsigned char *buffer, int x, int y, int red, int green, int blue, int alpha)
+inline static void mmm_pset_mono (Mmm *fb, unsigned char *buffer, int x, int y, int red, int green, int blue, int alpha)
 {
   int bpp =    ((int*)(fb))[0];
-  unsigned char *pix = ufb_get_pix (fb, buffer, x, y);
-  ufb_pix_pset_mono (fb, pix, bpp, x, y, red, green, blue, alpha);
+  unsigned char *pix = mmm_get_pix (fb, buffer, x, y);
+  mmm_pix_pset_mono (fb, pix, bpp, x, y, red, green, blue, alpha);
 }
 
 #endif

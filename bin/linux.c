@@ -82,7 +82,7 @@ static int event_check_pending (Host *host)
       {
         if (host->client)
         {
-          ufb_add_event (host->client->ufb, event);
+          mmm_add_event (host->client->mmm, event);
           free (event);
           had_event ++;
         }
@@ -118,12 +118,12 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 
   int cwidth, cheight;
 
-  const unsigned char *pixels = ufb_get_buffer_read (client->ufb,
+  const unsigned char *pixels = mmm_get_buffer_read (client->mmm,
       &width, &height, &rowstride);
   int x, y;
 
-  x = ufb_get_x (client->ufb);
-  y = ufb_get_y (client->ufb);
+  x = mmm_get_x (client->mmm);
+  y = mmm_get_y (client->mmm);
 
   if (pixels && width && height)
   {
@@ -150,10 +150,10 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       src += rowstride;
     }
 
-    ufb_read_done (client->ufb);
+    mmm_read_done (client->mmm);
   }
 
-  ufb_host_get_size (client->ufb, &cwidth, &cheight);
+  mmm_host_get_size (client->mmm, &cwidth, &cheight);
 
 #if 0
   if ( (cwidth  && cwidth  != host->width) ||
@@ -327,11 +327,11 @@ static int main_linux (const char *path)
 {
   Host *host;
 
-  setenv ("UFB_IS_COMPOSITOR", "foo", 1);
+  setenv ("MMM_IS_COMPOSITOR", "foo", 1);
   host = host_linux_new (path, 640, 480);
   HostLinux *host_linux = (void*)host;
   host_linux = (void*) host;
-  unsetenv ("UFB_IS_COMPOSITOR");
+  unsetenv ("MMM_IS_COMPOSITOR");
 
   //atexit (SDL_Quit);
 
@@ -353,8 +353,8 @@ static int main_linux (const char *path)
 
 int main (int argc, char **argv)
 {
-  const char *path = "/tmp/ufb";
-  setenv ("UFB_PATH", path, 1);
+  const char *path = "/tmp/mmm";
+  setenv ("MMM_PATH", path, 1);
 
   if (argv[1] == NULL)
     return main_linux (path);

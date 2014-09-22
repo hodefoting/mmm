@@ -8,7 +8,7 @@ typedef struct _Host      Host;
 struct _Client
 {
   char *filename;
-  Ufb  *ufb;
+  Mmm  *mmm;
   long  pid;
 
   int  premax_x;
@@ -37,7 +37,7 @@ struct _Host
 void host_clear_dirt (Host *host);
 void host_add_dirt (Host *host, int x0, int y0, int x1, int y1);
 void validate_client (Host *host, const char *client_name);
-void host_queue_draw (Host *host, UfbRectangle *rect);
+void host_queue_draw (Host *host, MmmRectangle *rect);
 void host_monitor_dir (Host *host);
 int host_idle_check (void *data);
 

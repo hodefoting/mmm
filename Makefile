@@ -29,3 +29,10 @@ mmm.sdl: bin/sdl.c bin/host.c libmmm.a
 
 mmm.linux: bin/linux.c bin/host.c libmmm.a bin/mmm-evsource*.c
 	$(CC) -Ilib bin/host.c bin/linux.c libmmm.a bin/mmm-evsource*.c -o $@
+
+install: install-bins
+install-bins: mmm.sdl mmm.linux
+	install mmm.sdl $(PREFIX)/bin
+	install mmm.linux $(PREFIX)/bin
+	install mmm $(PREFIX)/bin
+

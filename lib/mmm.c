@@ -4,7 +4,7 @@
 
 #include "mmm.h"
 
-#define UFB_WAIT_ATTEMPTS 30
+#define MMM_WAIT_ATTEMPTS 30
 #define USE_ATOMIC_OPS 1
 
 #include <fcntl.h>
@@ -18,39 +18,39 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 
-#define UFB_MAX_EVENT  1024
+#define MMM_MAX_EVENT  1024
 
 typedef enum {
-  UFB_INITIALIZING = 0,
-  UFB_NEUTRAL,
-  UFB_DRAWING,
-  UFB_WAIT_FLIP,
-  UFB_FLIPPING,
-} UfbFlipState;
+  MMM_INITIALIZING = 0,
+  MMM_NEUTRAL,
+  MMM_DRAWING,
+  MMM_WAIT_FLIP,
+  MMM_FLIPPING,
+} MmmFlipState;
 
-typedef struct _UfbShm UfbShm;
+typedef struct _MmmShm MmmShm;
 
-#define UFB_AUDIO_BUFFER_SIZE  4096
+#define MMM_AUDIO_BUFFER_SIZE  4096
 
-static char *UFB_magic    = "UFB ░ ";
-static char *UFB_fb       = "FB      ";
-static char *UFB_events   = "EVENTS  ";
-static char *UFB_messages = "MESSAGES";
-static char *UFB_pcm      = "PCM     ";
-static char *UFB_fbdata   = "FBDATA  ";
+static char *MMM_magic    = "MMM ░ ";
+static char *MMM_fb       = "FB      ";
+static char *MMM_events   = "EVENTS  ";
+static char *MMM_messages = "MESSAGES";
+static char *MMM_pcm      = "PCM     ";
+static char *MMM_fbdata   = "FBDATA  ";
 
-typedef struct UfbBlock {
+typedef struct MmmBlock {
   uint64_t type;
   uint32_t length;
   uint32_t next;
-} UfbBlock;
+} MmmBlock;
 
 /* In the comments, a C means the client (generally) writes and a H means the
  * host (generally) writes,
  */
 
-typedef struct UfbHeader {
- UfbBlock   block;
+typedef struct MmmHeader {
+ MmmBlock   block;
 
  uint32_t   client_version;  /* */
  uint32_t   server_version;  /* */
@@ -59,10 +59,10 @@ typedef struct UfbHeader {
  /* revision?                   */
  /* flags.. */
  uint32_t   pad[32];
-} UfbHeader;
+} MmmHeader;
 
-typedef struct UfbFb {
- UfbBlock   block;
+typedef struct MmmFb {
+ MmmBlock   block;
  uint8_t    title[256];      /* C  window title  */ /* XXX: need generic properties?  */
  uint8_t   *babl_format[128];/* C  pixel format; according to babls conventions */
  int32_t    width;           /* C  width of raster in pixels */
@@ -83,50 +83,50 @@ typedef struct UfbFb {
  int32_t    damage_width;    /* CH */
  int32_t    damage_height;   /* CH */
  uint32_t   pad[32];
-} UfbFb;
+} MmmFb;
 
-typedef struct UfbEvents {
-  UfbBlock       block;
+typedef struct MmmEvents {
+  MmmBlock       block;
   int16_t        read;      /* C  last event_no which has been read    */
   int16_t        write;     /* H  last event_no which has been written */
   uint32_t       pad[8];
-  uint8_t        buffer[UFB_MAX_EVENT][128]; /* S circular list of events    */
-} UfbEvents;
+  uint8_t        buffer[MMM_MAX_EVENT][128]; /* S circular list of events    */
+} MmmEvents;
 
-typedef struct UfbMessages {
-  UfbBlock       block;
+typedef struct MmmMessages {
+  MmmBlock       block;
   int16_t        read;      /* H  last message_no which has been read    */
   int16_t        write;     /* C  last message_no which has been written */
   uint32_t       pad[8];
-  uint8_t        buffer[UFB_MAX_EVENT][128]; /* C circular list of events    */
-} UfbMessages;
+  uint8_t        buffer[MMM_MAX_EVENT][128]; /* C circular list of events    */
+} MmmMessages;
 
-typedef struct UfbPcm {
-  UfbBlock       block;
-  UfbAudioFormat format;                        /* C */
+typedef struct MmmPcm {
+  MmmBlock       block;
+  MmmAudioFormat format;                        /* C */
   int            sample_rate;                   /* C */ 
   int            host_sample_rate;              /* H */
   int            read;                          /* H */
   int            write;                         /* C */
   uint32_t       pad[16];
-  uint8_t        buffer[UFB_AUDIO_BUFFER_SIZE]; /* C */
-} UfbPcm;
+  uint8_t        buffer[MMM_AUDIO_BUFFER_SIZE]; /* C */
+} MmmPcm;
 
-struct  _UfbShm { 
-  UfbHeader      header;    /* must be first  in file */
-  UfbFb          fb;        /* must be second in file */
-  UfbEvents      events;    /* must be third  in file */
-  UfbMessages    messages;  /* must be fourth in file */
-  UfbPcm         pcm;       /* must be fifth  in file */
+struct  _MmmShm { 
+  MmmHeader      header;    /* must be first  in file */
+  MmmFb          fb;        /* must be second in file */
+  MmmEvents      events;    /* must be third  in file */
+  MmmMessages    messages;  /* must be fourth in file */
+  MmmPcm         pcm;       /* must be fifth  in file */
 
   /* ... potential new blocks  ... */
 
-  UfbBlock       pixeldata; /* offset for pixeldata is defined in fb */
+  MmmBlock       pixeldata; /* offset for pixeldata is defined in fb */
 };
 
-static Ufb *ufb_new_shm (int width, int height, void *babl_format);
+static Mmm *mmm_new_shm (int width, int height, void *babl_format);
 
-struct Ufb_
+struct Mmm_
 {
   int          bpp;      /* do not move, inline function in header ..*/
   int          stride;   /* .. depends on position of bpp/stride */
@@ -142,14 +142,14 @@ struct Ufb_
   char        *path;
   int          fd;
 
-  UfbShm      *shm;
+  MmmShm      *shm;
 
   int          compositor_side;
 };
 
-static void ufb_remap (Ufb *fb);
+static void mmm_remap (Mmm *fb);
 
-int ufb_get_bytes_per_pixel (Ufb *fb)
+int mmm_get_bytes_per_pixel (Mmm *fb)
 {
   return fb->bpp;
 }
@@ -157,7 +157,7 @@ int ufb_get_bytes_per_pixel (Ufb *fb)
 static struct timeval start_time;
 #define usecs(time) ((time.tv_sec - start_time.tv_sec) * 1000000 + time.tv_usec)
 
-static void ufb_init_ticks (void)
+static void mmm_init_ticks (void)
 {
   static int done = 0;
 
@@ -170,44 +170,44 @@ static void ufb_init_ticks (void)
 inline static long ticks (void)
 {
   struct timeval measure_time;
-  ufb_init_ticks ();
+  mmm_init_ticks ();
   gettimeofday (&measure_time, NULL);
   return usecs (measure_time) - usecs (start_time);
 }
 
 #undef usecs
 
-long ufb_ticks (void)
+long mmm_ticks (void)
 {
   return ticks ();
 }
 
 int
-ufb_wait_neutral (Ufb *fb)
+mmm_wait_neutral (Mmm *fb)
 {
-  int attempts = UFB_WAIT_ATTEMPTS;
+  int attempts = MMM_WAIT_ATTEMPTS;
 
-  while (fb->shm->fb.flip_state != UFB_NEUTRAL && --attempts)
+  while (fb->shm->fb.flip_state != MMM_NEUTRAL && --attempts)
     usleep (500);
 
   return (attempts > 0 ? 0 : -1);
 } 
 
 static int
-ufb_set_state (Ufb *fb, UfbFlipState state)
+mmm_set_state (Mmm *fb, MmmFlipState state)
 {
   fb->shm->fb.flip_state = state;
   return 1;
 }
 
 unsigned char *
-ufb_get_buffer_write (Ufb *fb, int *width, int *height, int *stride,
+mmm_get_buffer_write (Mmm *fb, int *width, int *height, int *stride,
     void *babl_format)
 {
-  ufb_wait_neutral (fb);
+  mmm_wait_neutral (fb);
   //fprintf (stderr, "[%i]", fb->bpp);
 
-  ufb_set_state (fb, UFB_DRAWING);
+  mmm_set_state (fb, MMM_DRAWING);
   if (width) *width = fb->width;
   if (height) *height = fb->height;
   if (stride) *stride = fb->stride;
@@ -230,18 +230,18 @@ static inline void memcpy32_16 (uint8_t *dst, const uint8_t *src, int count)
     }
 }
 
-void _ufb_get_coords (Ufb *ufb, double *x, double *y);
+void _mmm_get_coords (Mmm *mmm, double *x, double *y);
 
 void
-ufb_write_done (Ufb *fb, int x, int y, int width, int height)
+mmm_write_done (Mmm *fb, int x, int y, int width, int height)
 {
   if (width == 0 && height == 0)
     {
       /* nothing written */
-      fb->shm->fb.flip_state = UFB_NEUTRAL;
+      fb->shm->fb.flip_state = MMM_NEUTRAL;
       return;
     }
-  fb->shm->fb.flip_state = UFB_WAIT_FLIP;
+  fb->shm->fb.flip_state = MMM_WAIT_FLIP;
 
   if (width <= 0)
   {
@@ -259,16 +259,16 @@ ufb_write_done (Ufb *fb, int x, int y, int width, int height)
     fb->shm->fb.damage_height = height;
   }
 
-  fb->shm->fb.flip_state = UFB_WAIT_FLIP;
+  fb->shm->fb.flip_state = MMM_WAIT_FLIP;
 }
 
 int
-ufb_wait_neutral_or_wait_flip (Ufb *fb)
+mmm_wait_neutral_or_wait_flip (Mmm *fb)
 {
-  int attempts = UFB_WAIT_ATTEMPTS;
+  int attempts = MMM_WAIT_ATTEMPTS;
 
-  while (fb->shm->fb.flip_state != UFB_NEUTRAL &&
-         fb->shm->fb.flip_state != UFB_WAIT_FLIP &&
+  while (fb->shm->fb.flip_state != MMM_NEUTRAL &&
+         fb->shm->fb.flip_state != MMM_WAIT_FLIP &&
          --attempts)
     usleep (500);
 
@@ -279,37 +279,37 @@ ufb_wait_neutral_or_wait_flip (Ufb *fb)
 }
 
 const unsigned char *
-ufb_get_buffer_read (Ufb *fb, int *width, int *height, int *stride)
+mmm_get_buffer_read (Mmm *fb, int *width, int *height, int *stride)
 {
   if (width)  *width  = fb->width;
   if (height) *height = fb->height;
 
-  if(ufb_host_check_size (fb, NULL, NULL))
+  if(mmm_host_check_size (fb, NULL, NULL))
     return NULL;
-  if (ufb_wait_neutral_or_wait_flip (fb))
+  if (mmm_wait_neutral_or_wait_flip (fb))
     return NULL;
 
   if (stride) *stride = fb->stride;
 
-  ufb_set_state (fb, UFB_FLIPPING);
+  mmm_set_state (fb, MMM_FLIPPING);
 
   return (void*)fb->fb; /* the direct device XXX: should use double buffering for toplevel */
 }
 
 void
-ufb_read_done (Ufb *fb)
+mmm_read_done (Mmm *fb)
 {
   fb->shm->fb.damage_x = 0;
   fb->shm->fb.damage_y = 0;
   fb->shm->fb.damage_width = 0;
   fb->shm->fb.damage_height = 0;
-  fb->shm->fb.flip_state = UFB_NEUTRAL;
+  fb->shm->fb.flip_state = MMM_NEUTRAL;
 }
 
-Ufb *
-ufb_host_open (const char *path)
+Mmm *
+mmm_host_open (const char *path)
 {
-  Ufb *fb = calloc (sizeof (Ufb), 1);
+  Mmm *fb = calloc (sizeof (Mmm), 1);
 
   fb->compositor_side = 1;
   fb->fd = open (path, O_RDWR);
@@ -319,28 +319,28 @@ ufb_host_open (const char *path)
       return NULL;
     }
   
-  /* first we map just the UfbShm struct */
-  fb->shm = mmap (NULL, sizeof (UfbShm), PROT_READ | PROT_WRITE, MAP_SHARED, fb->fd, 0);
-  fb->mapped_size = sizeof (UfbShm);
+  /* first we map just the MmmShm struct */
+  fb->shm = mmap (NULL, sizeof (MmmShm), PROT_READ | PROT_WRITE, MAP_SHARED, fb->fd, 0);
+  fb->mapped_size = sizeof (MmmShm);
   fb->bpp = 4;
   fb->width = fb->shm->fb.width;
   fb->height = fb->shm->fb.height;
   fb->stride = fb->shm->fb.width * fb->bpp;
 
-  ufb_remap (fb);
+  mmm_remap (fb);
   return fb;
 }
-static void ufb_init_header (UfbShm *shm);
+static void mmm_init_header (MmmShm *shm);
 
 static void
-ufb_remap (Ufb *fb)
+mmm_remap (Mmm *fb)
 {
   {
-    int size = sizeof(UfbShm) + fb->shm->fb.height * fb->shm->fb.stride;
+    int size = sizeof(MmmShm) + fb->shm->fb.height * fb->shm->fb.stride;
     if (size > fb->mapped_size)
       {
         if (pwrite (fb->fd, "", 1, size+1) == -1)
-          fprintf (stderr, "ufb failed stretching\n");
+          fprintf (stderr, "mmm failed stretching\n");
         fsync (fb->fd);
 #if 0
         fb->shm = mremap (fb->shm, fb->mapped_size, size, MREMAP_MAYMOVE);
@@ -353,7 +353,7 @@ ufb_remap (Ufb *fb)
         fb->mapped_size = size;
       }
     if (!fb->compositor_side)
-      ufb_init_header (fb->shm);
+      mmm_init_header (fb->shm);
   }
 
   fb->width  = fb->shm->fb.width;
@@ -362,17 +362,17 @@ ufb_remap (Ufb *fb)
   fb->fb = ((uint8_t*)fb->shm) + fb->shm->fb.fb_offset;
 }
 
-int ufb_get_width  (Ufb *fb)
+int mmm_get_width  (Mmm *fb)
 {
   return fb->width;
 }
-int ufb_get_height (Ufb *fb)
+int mmm_get_height (Mmm *fb)
 {
   return fb->height;
 }
 
 void
-ufb_get_size (Ufb *fb, int *width, int *height)
+mmm_get_size (Mmm *fb, int *width, int *height)
 {
   if (width)
     *width = fb->width;
@@ -381,63 +381,63 @@ ufb_get_size (Ufb *fb, int *width, int *height)
 }
 
 int
-ufb_host_check_size (Ufb *fb, int *width, int *height)
+mmm_host_check_size (Mmm *fb, int *width, int *height)
 {
   int ret = 0;
   if (fb->width != fb->shm->fb.width ||
       fb->height != fb->shm->fb.height)
     {
-      ufb_remap (fb);
+      mmm_remap (fb);
       ret = 1;
       fb->stride = fb->shm->fb.stride;
       fb->width = fb->shm->fb.width;
     }
   if (width || height)
-    ufb_get_size (fb, width, height);
+    mmm_get_size (fb, width, height);
   return ret;
 }
 
 int
-ufb_client_check_size (Ufb *fb, int *width, int *height)
+mmm_client_check_size (Mmm *fb, int *width, int *height)
 {
   int ret = 0;
   if (fb->shm->fb.desired_width  != fb->shm->fb.width ||
       fb->shm->fb.desired_height != fb->shm->fb.height)
     {
-      ufb_set_size (fb, fb->shm->fb.desired_width, fb->shm->fb.desired_height);
+      mmm_set_size (fb, fb->shm->fb.desired_width, fb->shm->fb.desired_height);
       ret = 1;
     }
   if (width || height)
-    ufb_get_size (fb, width, height);
+    mmm_get_size (fb, width, height);
   return ret;
 }
 
-void ufb_set_size (Ufb *fb, int width, int height)
+void mmm_set_size (Mmm *fb, int width, int height)
 {
-  while ((fb->shm->fb.flip_state != UFB_NEUTRAL) &&
-         (fb->shm->fb.flip_state != UFB_INITIALIZING))
+  while ((fb->shm->fb.flip_state != MMM_NEUTRAL) &&
+         (fb->shm->fb.flip_state != MMM_INITIALIZING))
     usleep (500);
-  fb->shm->fb.flip_state = UFB_INITIALIZING;
+  fb->shm->fb.flip_state = MMM_INITIALIZING;
 
   fb->shm->fb.width = fb->shm->fb.desired_width =  width;
   fb->shm->fb.height = fb->shm->fb.desired_height = height;
   fb->shm->fb.stride = fb->shm->fb.width * fb->bpp;
-  ufb_remap (fb);
-  fb->shm->fb.flip_state = UFB_NEUTRAL;
+  mmm_remap (fb);
+  fb->shm->fb.flip_state = MMM_NEUTRAL;
 }
 
-int ufb_has_event (Ufb *fb)
+int mmm_has_event (Mmm *fb)
 {
   if (fb->shm->events.read != fb->shm->events.write)
     return 1;
   return 0;
 }
 
-void ufb_add_event (Ufb *fb, const char *event)
+void mmm_add_event (Mmm *fb, const char *event)
 {
-  UfbShm *shm = fb->shm;
+  MmmShm *shm = fb->shm;
   int event_no = shm->events.write + 1;
-  if (event_no >= UFB_MAX_EVENT)
+  if (event_no >= MMM_MAX_EVENT)
     event_no = 0;
 
   if (event_no == shm->events.read)
@@ -452,47 +452,47 @@ void ufb_add_event (Ufb *fb, const char *event)
   strcpy ((void*)shm->events.buffer[event_no], event);
 
   shm->events.write ++;
-  if (shm->events.write >= UFB_MAX_EVENT)
+  if (shm->events.write >= MMM_MAX_EVENT)
     shm->events.write = 0;
 }
 
 
-const char *ufb_get_event (Ufb *fb)
+const char *mmm_get_event (Mmm *fb)
 {
   if (fb->shm->events.read != fb->shm->events.write)
     {
       fb->shm->events.read++;
-      if (fb->shm->events.read >= UFB_MAX_EVENT)
+      if (fb->shm->events.read >= MMM_MAX_EVENT)
         fb->shm->events.read = 0;
       return (void*)fb->shm->events.buffer[fb->shm->events.read];
     }
   return NULL;
 }
 
-Ufb *ufb_new (int width, int height, UfbFlag flags, void *babl_format)
+Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
 {
-  Ufb *fb = NULL;
+  Mmm *fb = NULL;
 
-  if (!getenv ("UFB_PATH"))
+  if (!getenv ("MMM_PATH"))
   {
     switch (fork())
     {
       case 0: /* child */
-        execlp ("mmfb", "mmfb", NULL);
+        execlp ("mmm", "mmm", NULL);
       case -1:
         fprintf (stderr, "fork failed\n");
         return 0;
     }
-    setenv ("UFB_PATH", "/tmp/ufb", 1);
+    setenv ("MMM_PATH", "/tmp/mmm", 1);
   }
 
   {
-    int is_compositor = (getenv ("UFB_COMPOSITOR") != NULL);
-    const char *env = getenv ("UFB_PATH");
+    int is_compositor = (getenv ("MMM_COMPOSITOR") != NULL);
+    const char *env = getenv ("MMM_PATH");
     if (env && !is_compositor)
     {
-      fb = ufb_new_shm (width, height, babl_format);
-      ufb_set_size (fb, width, height);
+      fb = mmm_new_shm (width, height, babl_format);
+      mmm_set_size (fb, width, height);
     }
   }
 
@@ -504,7 +504,7 @@ Ufb *ufb_new (int width, int height, UfbFlag flags, void *babl_format)
 
   if (fb)
     {
-      ufb_set_title (fb, "ufb");
+      mmm_set_title (fb, "mmm");
     }
 
   if (!fb)
@@ -512,62 +512,62 @@ Ufb *ufb_new (int width, int height, UfbFlag flags, void *babl_format)
       fprintf (stderr, "unable to get framebuffer\n");
     }
 
-  ufb_pcm_set_sample_rate (fb, 44100);
-  ufb_pcm_set_format (fb, UFB_s16);
+  mmm_pcm_set_sample_rate (fb, 44100);
+  mmm_pcm_set_format (fb, MMM_s16);
 
   return fb;
 }
 
 #include <assert.h>
 
-static void ufb_init_header (UfbShm *shm)
+static void mmm_init_header (MmmShm *shm)
 {
   int pos = 0;
   int length;
 
-  shm->fb.fb_offset = sizeof (UfbShm);
-  length = sizeof (UfbHeader);
+  shm->fb.fb_offset = sizeof (MmmShm);
+  length = sizeof (MmmHeader);
   shm->header.block.length = length;
   pos += length;
   shm->header.block.next = pos;
-  assert (strlen (UFB_magic) == 8);
-  memcpy (&shm->header.block.type, UFB_magic, 8);
+  assert (strlen (MMM_magic) == 8);
+  memcpy (&shm->header.block.type, MMM_magic, 8);
 
-  length = sizeof(UfbFb);
+  length = sizeof(MmmFb);
   shm->fb.block.length = length;
   pos += length;
   shm->fb.block.next = pos;
-  assert (strlen (UFB_fb) == 8);
-  memcpy (&shm->fb.block.type, UFB_fb, 8);
+  assert (strlen (MMM_fb) == 8);
+  memcpy (&shm->fb.block.type, MMM_fb, 8);
 
-  length = sizeof (UfbEvents);
+  length = sizeof (MmmEvents);
   shm->events.block.length = length;
   pos += length;
   shm->events.block.next = pos;
-  assert (strlen (UFB_events) == 8);
-  memcpy (&shm->events.block.type, UFB_events, 8);
+  assert (strlen (MMM_events) == 8);
+  memcpy (&shm->events.block.type, MMM_events, 8);
 
-  length = sizeof (UfbMessages);
+  length = sizeof (MmmMessages);
   shm->messages.block.length = length;
   pos += length;
   shm->messages.block.next = pos;
-  assert (strlen (UFB_messages) == 8);
-  memcpy (&shm->messages.block.type, UFB_messages, 8);
+  assert (strlen (MMM_messages) == 8);
+  memcpy (&shm->messages.block.type, MMM_messages, 8);
 
-  length = sizeof (UfbPcm);
+  length = sizeof (MmmPcm);
   shm->pcm.block.length = length;
   pos += length;
   shm->pcm.block.next = pos;
-  assert (strlen (UFB_pcm) == 8);
-  memcpy (&shm->pcm.block.type, UFB_pcm, 8);
+  assert (strlen (MMM_pcm) == 8);
+  memcpy (&shm->pcm.block.type, MMM_pcm, 8);
 
-  assert (strlen (UFB_fbdata) == 8);
-  memcpy (&shm->pixeldata.type, UFB_fbdata, 8);
+  assert (strlen (MMM_fbdata) == 8);
+  memcpy (&shm->pixeldata.type, MMM_fbdata, 8);
 }
 
-static Ufb *ufb_new_shm (int width, int height, void *babl_format)
+static Mmm *mmm_new_shm (int width, int height, void *babl_format)
 {
-  Ufb *fb = calloc (sizeof (Ufb), 1);
+  Mmm *fb = calloc (sizeof (Mmm), 1);
   if (width < 0 && height < 0)
     {
       width = 640;
@@ -583,37 +583,37 @@ static Ufb *ufb_new_shm (int width, int height, void *babl_format)
     free (fb->path);
   {
     char buf[512];
-    const char *ufb_path = getenv("UFB_PATH");
-    if (!ufb_path) ufb_path = "/tmp";
-    sprintf (buf, "%s/fb.XXXXXX", ufb_path);
+    const char *mmm_path = getenv("MMM_PATH");
+    if (!mmm_path) mmm_path = "/tmp";
+    sprintf (buf, "%s/fb.XXXXXX", mmm_path);
     fb->path = strdup (buf);
   }
   fprintf (stderr, "%s\n", fb->path);
   fb->fd = mkstemp (fb->path);
-  pwrite (fb->fd, "", 1, sizeof (UfbShm) + fb->stride * fb->height);
+  pwrite (fb->fd, "", 1, sizeof (MmmShm) + fb->stride * fb->height);
   fsync (fb->fd);
 
   chmod (fb->path, 511);
 
-  fb->mapped_size = fb->stride * fb->height + sizeof (UfbShm);
+  fb->mapped_size = fb->stride * fb->height + sizeof (MmmShm);
   fb->shm = mmap (NULL, fb->mapped_size, PROT_READ | PROT_WRITE, MAP_SHARED, fb->fd, 0);
-  ufb_init_header (fb->shm);
+  mmm_init_header (fb->shm);
 
   fb->shm->fb.desired_width = fb->width;
   fb->shm->fb.desired_height = fb->height;
   fb->shm->fb.width = fb->width;
   fb->shm->fb.stride = fb->stride;
   fb->shm->fb.height = fb->height;
-  fb->shm->fb.flip_state = UFB_NEUTRAL;
+  fb->shm->fb.flip_state = MMM_NEUTRAL;
   fb->shm->header.pid = getpid ();
   fprintf (stderr, "pidset\n");
-  ufb_remap (fb);
+  mmm_remap (fb);
 
   return fb;
 }
 
 void
-ufb_destroy (Ufb *fb)
+mmm_destroy (Mmm *fb)
 {
   munmap (fb->shm, fb->mapped_size);
   if (fb->fd)
@@ -621,7 +621,7 @@ ufb_destroy (Ufb *fb)
   free (fb);
 }
 
-int ufb_get_damage (Ufb *fb, int *x, int *y, int *width, int *height)
+int mmm_get_damage (Mmm *fb, int *x, int *y, int *width, int *height)
 {
   if (x)
     *x = fb->shm->fb.damage_x;
@@ -631,52 +631,52 @@ int ufb_get_damage (Ufb *fb, int *x, int *y, int *width, int *height)
     *width = fb->shm->fb.damage_width;
   if (height)
     *height = fb->shm->fb.damage_height;
-  return fb->shm->fb.flip_state == UFB_WAIT_FLIP;
+  return fb->shm->fb.flip_state == MMM_WAIT_FLIP;
 }
 
-const char *ufb_get_babl_format (Ufb *fb)
+const char *mmm_get_babl_format (Mmm *fb)
 {
   return (char *)fb->shm->fb.babl_format;
 }
 
 void
-ufb_set_title (Ufb *ufb, const char *title)
+mmm_set_title (Mmm *mmm, const char *title)
 {
-  strncpy ((void*)ufb->shm->fb.title, title, 512);
+  strncpy ((void*)mmm->shm->fb.title, title, 512);
 }
 
 const char *
-ufb_get_title (Ufb *ufb)
+mmm_get_title (Mmm *mmm)
 {
-  return (void*)ufb->shm->fb.title;
+  return (void*)mmm->shm->fb.title;
 }
 
-void ufb_set_x (Ufb *fb, int x)
+void mmm_set_x (Mmm *fb, int x)
 {
   fb->shm->fb.x = x;
 }
 
-void ufb_set_y (Ufb *fb, int y)
+void mmm_set_y (Mmm *fb, int y)
 {
   fb->shm->fb.y = y;
 }
 
-int  ufb_get_x (Ufb *fb)
+int  mmm_get_x (Mmm *fb)
 {
   return fb->shm->fb.x;
 }
 
-int ufb_get_y (Ufb *fb)
+int mmm_get_y (Mmm *fb)
 {
   return fb->shm->fb.y;
 }
 
-long ufb_client_pid (Ufb *fb)
+long mmm_client_pid (Mmm *fb)
 {
   return fb->shm->header.pid;
 }
 
-void ufb_host_get_size (Ufb *fb, int *width, int *height)
+void mmm_host_get_size (Mmm *fb, int *width, int *height)
 {
   if (!fb)
     return;
@@ -686,7 +686,7 @@ void ufb_host_get_size (Ufb *fb, int *width, int *height)
     *height = fb->shm->fb.desired_height;
 }
 
-void ufb_host_set_size (Ufb *fb, int width, int height)
+void mmm_host_set_size (Mmm *fb, int width, int height)
 {
   if (!fb)
     return;
@@ -694,41 +694,41 @@ void ufb_host_set_size (Ufb *fb, int width, int height)
   fb->shm->fb.desired_height = height;
 }
 
-void ufb_pcm_set_sample_rate (Ufb *fb, int freq)
+void mmm_pcm_set_sample_rate (Mmm *fb, int freq)
 {
   fb->shm->pcm.sample_rate = freq;
 }
 
-int ufb_pcm_get_sample_rate (Ufb *fb)
+int mmm_pcm_get_sample_rate (Mmm *fb)
 {
   return fb->shm->pcm.sample_rate;
 }
 
-void ufb_pcm_set_format      (Ufb *fb, UfbAudioFormat format)
+void mmm_pcm_set_format      (Mmm *fb, MmmAudioFormat format)
 {
   fb->shm->pcm.format = format;
 }
 
-int ufb_pcm_bpf (Ufb *fb)
+int mmm_pcm_bpf (Mmm *fb)
 {
-  UfbAudioFormat format = fb->shm->pcm.format;
+  MmmAudioFormat format = fb->shm->pcm.format;
   //return 2;
   switch (format)
   {
-    case UFB_f32:  return 4;
-    case UFB_f32S: return 8;
-    case UFB_s16:  return 2;
-    case UFB_s16S: return 4;
+    case MMM_f32:  return 4;
+    case MMM_f32S: return 8;
+    case MMM_s16:  return 2;
+    case MMM_s16S: return 4;
     default: return 1;
   }
 }
 
-static inline int ufb_pcm_frame_count (Ufb *fb)
+static inline int mmm_pcm_frame_count (Mmm *fb)
 {
-  return (UFB_AUDIO_BUFFER_SIZE / ufb_pcm_bpf (fb));
+  return (MMM_AUDIO_BUFFER_SIZE / mmm_pcm_bpf (fb));
 }
 
-int  ufb_pcm_get_queued_frames (Ufb *fb)
+int  mmm_pcm_get_queued_frames (Mmm *fb)
 {
   int q = fb->shm->pcm.write;
   int p = fb->shm->pcm.read;
@@ -746,19 +746,19 @@ int  ufb_pcm_get_queued_frames (Ufb *fb)
   else
     /* |       p   | */
     /* |==q....====| */
-    return q + (ufb_pcm_frame_count (fb) - p);
+    return q + (mmm_pcm_frame_count (fb) - p);
 }
 
-int  ufb_pcm_get_free_frames (Ufb *fb)
+int  mmm_pcm_get_free_frames (Mmm *fb)
 {
-  int total = ufb_pcm_frame_count (fb);
-  return total - ufb_pcm_get_queued_frames (fb) - 1;
+  int total = mmm_pcm_frame_count (fb);
+  return total - mmm_pcm_get_queued_frames (fb) - 1;
 }
 
-int  ufb_pcm_get_frame_chunk (Ufb *fb)
+int  mmm_pcm_get_frame_chunk (Mmm *fb)
 {
-  int total = ufb_pcm_frame_count (fb);
-  int free = ufb_pcm_get_free_frames (fb);
+  int total = mmm_pcm_frame_count (fb);
+  int free = mmm_pcm_get_free_frames (fb);
   return free;
   int ret = total / 2;
   if (ret > free)
@@ -768,12 +768,12 @@ int  ufb_pcm_get_frame_chunk (Ufb *fb)
 
 //static long frame_no = 0;
 
-int ufb_pcm_write (Ufb *fb, const int8_t *data, int frames)
+int mmm_pcm_write (Mmm *fb, const int8_t *data, int frames)
 {
-  int total = ufb_pcm_frame_count (fb);
+  int total = mmm_pcm_frame_count (fb);
   uint8_t *seg1, *seg2 = NULL;
   int      seg1_len, seg2_len = 0;
-  int      bpf = ufb_pcm_bpf (fb); /* bytes per frame */
+  int      bpf = mmm_pcm_bpf (fb); /* bytes per frame */
 
   int q = fb->shm->pcm.write;
   int p = fb->shm->pcm.read;
@@ -861,12 +861,12 @@ int ufb_pcm_write (Ufb *fb, const int8_t *data, int frames)
   return ret;
 }
 
-int  ufb_pcm_read (Ufb *fb, int8_t *data, int frames)
+int  mmm_pcm_read (Mmm *fb, int8_t *data, int frames)
 {
-  int      total = ufb_pcm_frame_count (fb);
+  int      total = mmm_pcm_frame_count (fb);
   uint8_t *seg1, *seg2 = NULL;
   int      seg1_len, seg2_len = 0;
-  int      bpf = ufb_pcm_bpf (fb); /* bytes per frame */
+  int      bpf = mmm_pcm_bpf (fb); /* bytes per frame */
   int      ret = 0;
 
   int q = fb->shm->pcm.write;
@@ -937,18 +937,18 @@ int  ufb_pcm_read (Ufb *fb, int8_t *data, int frames)
 
 /* message/event calls _can_ share more code */
 
-int ufb_has_message (Ufb *fb)
+int mmm_has_message (Mmm *fb)
 {
   if (fb->shm->messages.read != fb->shm->messages.write)
     return 1;
   return 0;
 }
 
-void ufb_add_message (Ufb *fb, const char *message)
+void mmm_add_message (Mmm *fb, const char *message)
 {
-  UfbShm *shm = fb->shm;
+  MmmShm *shm = fb->shm;
   int message_no = shm->messages.write + 1;
-  if (message_no >= UFB_MAX_EVENT)
+  if (message_no >= MMM_MAX_EVENT)
     message_no = 0;
 
   if (message_no == shm->messages.read)
@@ -963,16 +963,16 @@ void ufb_add_message (Ufb *fb, const char *message)
   strcpy ((void*)shm->messages.buffer[message_no], message);
 
   shm->messages.write ++;
-  if (shm->messages.write >= UFB_MAX_EVENT)
+  if (shm->messages.write >= MMM_MAX_EVENT)
     shm->messages.write = 0;
 }
 
-const char *ufb_get_message (Ufb *fb)
+const char *mmm_get_message (Mmm *fb)
 {
   if (fb->shm->messages.read != fb->shm->messages.write)
     {
       fb->shm->messages.read++;
-      if (fb->shm->messages.read >= UFB_MAX_EVENT)
+      if (fb->shm->messages.read >= MMM_MAX_EVENT)
         fb->shm->messages.read = 0;
       return (void*)fb->shm->messages.buffer[fb->shm->messages.read];
     }

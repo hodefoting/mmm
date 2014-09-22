@@ -42,7 +42,7 @@ static uint8_t *pico_fb (int width, int height)
   char path[512];
   int fd;
   int size = UFB_SIZE + width * height * BPP;
-  const char *ufb_path = getenv ("UFB_PATH");
+  const char *ufb_path = getenv ("MMM_PATH");
   if (!ufb_path)
     return NULL;
   sprintf (path, "%s/fb.XXXXXX", ufb_path);

@@ -49,19 +49,19 @@ void validate_client (Host *host, const char *client_name)
 
     char tmp[256];
     sprintf (tmp, "%s/%s", host->fbdir, client_name);
-    client->ufb = ufb_host_open (tmp);
-    client->pid = ufb_client_pid (client->ufb);
+    client->mmm = mmm_host_open (tmp);
+    client->pid = mmm_client_pid (client->mmm);
 
     if (client->pid == 0)
     {
-      ufb_destroy (client->ufb);
+      mmm_destroy (client->mmm);
       free (client);
       return;
     }
 
     fprintf (stderr, "new client %li\n", client->pid);
 
-    if (!client->ufb)
+    if (!client->mmm)
     {
       fprintf (stderr, "failed to open client %s\n", tmp);
       return;
@@ -71,12 +71,12 @@ void validate_client (Host *host, const char *client_name)
 
     if (client->pid != getpid ())
     {
-      if (ufb_get_x (client->ufb) == 0 &&
-          ufb_get_y (client->ufb) == 0)
+      if (mmm_get_x (client->mmm) == 0 &&
+          mmm_get_y (client->mmm) == 0)
       {
         static int pos = 0;
-        ufb_set_x (client->ufb, pos);
-        ufb_set_y (client->ufb, pos);
+        mmm_set_x (client->mmm, pos);
+        mmm_set_y (client->mmm, pos);
 
         //pos += 12;
       }
@@ -98,7 +98,7 @@ static int pid_is_alive (long pid)
   return 1;
 }
 
-void host_queue_draw (Host *host, UfbRectangle *rect)
+void host_queue_draw (Host *host, MmmRectangle *rect)
 {
   if (rect)
     host_add_dirt (host, rect->x, rect->y, rect->x+rect->width, rect->y+rect->height);
@@ -116,10 +116,10 @@ again:
     {
       char tmp[256];
       sprintf (tmp, "%s/%s", host->fbdir, client->filename);
-      if (client->ufb)
+      if (client->mmm)
       {
-        ufb_destroy (client->ufb);
-        client->ufb = NULL;
+        mmm_destroy (client->mmm);
+        client->mmm = NULL;
       }
 
       fprintf (stderr, "removed client %li\n", client->pid);
@@ -155,25 +155,25 @@ int host_idle_check (void *data)
     Client *client = host->client;
 
     int x, y, width, height;
-    if (ufb_get_damage (client->ufb, &x, &y, &width, &height))
+    if (mmm_get_damage (client->mmm, &x, &y, &width, &height))
     {
       if (width)
       {
-        UfbRectangle rect = {x + ufb_get_x (client->ufb), ufb_get_y (client->ufb), width, height};
+        MmmRectangle rect = {x + mmm_get_x (client->mmm), mmm_get_y (client->mmm), width, height};
         //fprintf (stderr, "%i %i %i %i",  x, y, width, height);
         host_queue_draw (host, &rect);
       }
       else
       {
-        UfbRectangle rect = {ufb_get_x (client->ufb), ufb_get_y (client->ufb),
-                             ufb_get_width (client->ufb), ufb_get_height        (client->ufb)};
+        MmmRectangle rect = {mmm_get_x (client->mmm), mmm_get_y (client->mmm),
+                             mmm_get_width (client->mmm), mmm_get_height        (client->mmm)};
         host_queue_draw (host, &rect);
       }
     }
 
-    while (ufb_has_message (client->ufb))
+    while (mmm_has_message (client->mmm))
     {
-      fprintf (stderr, "%p: %s\n", client->ufb, ufb_get_message (client->ufb));
+      fprintf (stderr, "%p: %s\n", client->mmm, mmm_get_message (client->mmm));
     }
   }
   return 1;

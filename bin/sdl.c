@@ -38,12 +38,12 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 
   int cwidth, cheight;
 
-  const unsigned char *pixels = ufb_get_buffer_read (client->ufb,
+  const unsigned char *pixels = mmm_get_buffer_read (client->mmm,
       &width, &height, &rowstride);
   int x, y;
 
-  x = ufb_get_x (client->ufb);
-  y = ufb_get_y (client->ufb);
+  x = mmm_get_x (client->mmm);
+  y = mmm_get_y (client->mmm);
 
   if (pixels && width && height)
   {
@@ -65,11 +65,11 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       src += rowstride;
     }
 
-    ufb_read_done (client->ufb);
+    mmm_read_done (client->mmm);
   }
   SDL_UpdateRect(screen, 0,0,0,0);
 
-  ufb_host_get_size (client->ufb, &cwidth, &cheight);
+  mmm_host_get_size (client->mmm, &cwidth, &cheight);
 
   if ( (cwidth  && cwidth  != host->width) ||
        (cheight && cheight != host->height))
@@ -204,11 +204,11 @@ static int main_sdl (const char *path)
 {
   Host *host;
 
-  setenv ("UFB_IS_COMPOSITOR", "foo", 1);
+  setenv ("MMM_IS_COMPOSITOR", "foo", 1);
   host = host_sdl_new (path, 640, 480);
   HostSDL *host_sdl = (void*)host;
   host_sdl = (void*) host;
-  unsetenv ("UFB_IS_COMPOSITOR");
+  unsetenv ("MMM_IS_COMPOSITOR");
 
   SDL_Event event;
 
@@ -233,7 +233,7 @@ static int main_sdl (const char *path)
                  (float)event.motion.x,
                  (float)event.motion.y);
             if (host->client)
-              ufb_add_event (host->client->ufb, buf);
+              mmm_add_event (host->client->mmm, buf);
           }
           break;
         case SDL_MOUSEBUTTONDOWN:
@@ -242,7 +242,7 @@ static int main_sdl (const char *path)
                  (float)event.button.x,
                  (float)event.button.y);
             if (host->client)
-              ufb_add_event (host->client->ufb, buf);
+              mmm_add_event (host->client->mmm, buf);
             host->pointer_down[0] = 1;
           }
           break;
@@ -252,7 +252,7 @@ static int main_sdl (const char *path)
                  (float)event.button.x,
                  (float)event.button.y);
             if (host->client)
-              ufb_add_event (host->client->ufb, buf);
+              mmm_add_event (host->client->mmm, buf);
             host->pointer_down[0] = 0;
           }
           break;
@@ -325,7 +325,7 @@ static int main_sdl (const char *path)
             }
             if (name)
               if (host->client)
-                ufb_add_event (host->client->ufb, name);
+                mmm_add_event (host->client->mmm, name);
           }
           break;
         case SDL_VIDEORESIZE:
@@ -336,7 +336,7 @@ static int main_sdl (const char *path)
           host->height = event.resize.h;
           host->stride = host->width * host->bpp;
           if (host->client)
-            ufb_host_set_size (host->client->ufb,
+            mmm_host_set_size (host->client->mmm,
                 host->width, host->height);
           break;
       }
@@ -359,8 +359,8 @@ static int main_sdl (const char *path)
 
 int main (int argc, char **argv)
 {
-  const char *path = "/tmp/ufb";
-  setenv ("UFB_PATH", path, 1);
+  const char *path = "/tmp/mmm";
+  setenv ("MMM_PATH", path, 1);
 
   if (argv[1] == NULL)
     return main_sdl (path);
