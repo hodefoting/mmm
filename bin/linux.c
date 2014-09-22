@@ -19,6 +19,12 @@
 
 #include "host.h"
 
+#include "mmfb-evsource.h"
+
+EvSource *evsource_ts_new (void);
+EvSource *evsource_kb_new (void);
+EvSource *evsource_mice_new (void);
+
 typedef struct _HostLinux   HostLinux;
 
 /////////////////////////////////////////////////////////////////////
@@ -36,7 +42,70 @@ struct _HostLinux
   int          fb_mapped_size;
   struct       fb_var_screeninfo vinfo;
   struct       fb_fix_screeninfo finfo;
+
+  EvSource    *evsource[4];
+  int          evsource_count;
 };
+
+void linux_warp_cursor (Host *host, int x, int y)
+{
+  HostLinux *host_linux = (void*)host;
+  int i;
+  for (i = 0; i < host_linux->evsource_count; i++)
+    evsource_set_coord (host_linux->evsource[i], x, y);
+}
+
+EvSource *evsource_ts_new (void);
+EvSource *evsource_kb_new (void);
+EvSource *evsource_mice_new (void);
+
+static int host_add_evsource (Host *host, EvSource *source)
+{
+  HostLinux *host_linux = (void*)host;
+  if (source)
+  {
+    host_linux->evsource[host_linux->evsource_count++] = source;
+  }
+}
+
+static int event_check_pending (Host *host)
+{
+  HostLinux *host_linux = (void*)host;
+  int i;
+  int had_event = 0;
+  for (i = 0; i < host_linux->evsource_count; i++)
+  {
+    while (evsource_has_event (host_linux->evsource[i]))
+    {
+      char *event = evsource_get_event (host_linux->evsource[i]);
+      if (event)
+      {
+        if (host->client)
+        {
+          ufb_add_event (host->client->ufb, event);
+          free (event);
+          had_event ++;
+        }
+      }
+    }
+  }
+
+  return had_event != 0;
+}
+
+static inline void memcpy32_16 (uint8_t *dst, const uint8_t *src, int count)
+{
+  while (count--)
+    {
+      int big = ((src[0] >> 3)) +
+                ((src[1] >> 2)<<5) +
+                ((src[2] >> 3)<<11);
+      dst[1] = big >> 8;
+      dst[0] = big & 255;
+      dst+=2;
+      src+=4;
+    }
+}
 
 static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 {
@@ -71,14 +140,18 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
     {
       if (dst >= (uint8_t*)host_linux->front_buffer &&
           dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
-        memcpy (dst, src, copystride);
+      {
+        if (host->bpp == 4)
+          memcpy (dst, src, copystride);
+        else
+          memcpy32_16 (dst, src, copystride / host->bpp);
+      }
       dst += host_linux->fb_stride;
       src += rowstride;
     }
 
     ufb_read_done (client->ufb);
   }
-  //SDL_UpdateRect(screen, 0,0,0,0);
 
   ufb_host_get_size (client->ufb, &cwidth, &cheight);
 
@@ -210,6 +283,10 @@ Host *host_linux_new (const char *path, int width, int height)
   host->height = host_linux->vinfo.yres;
 
   host_clear_dirt (host);
+
+  host_add_evsource (host, evsource_kb_new ());
+  host_add_evsource (host, evsource_mice_new ());
+
   return host;
 }
 
@@ -260,138 +337,9 @@ static int main_linux (const char *path)
 
   while (!host_has_quit)
   {
-    int got_event = 0;
-    char buf[64];
-#if 0
-    while (SDL_PollEvent (&event))
-    {
-      switch (event.type)
-      {
-        case SDL_MOUSEMOTION:
-          {
-            if (host->pointer_down[0])
-            sprintf (buf, "mouse-drag %.0f %.0f",
-                 (float)event.motion.x,
-                 (float)event.motion.y);
-            else
-            sprintf (buf, "mouse-motion %.0f %.0f",
-                 (float)event.motion.x,
-                 (float)event.motion.y);
-            if (host->client)
-              ufb_add_event (host->client->ufb, buf);
-          }
-          break;
-        case SDL_MOUSEBUTTONDOWN:
-          {
-            sprintf (buf, "mouse-press %.0f %.0f",
-                 (float)event.button.x,
-                 (float)event.button.y);
-            if (host->client)
-              ufb_add_event (host->client->ufb, buf);
-            host->pointer_down[0] = 1;
-          }
-          break;
-        case SDL_MOUSEBUTTONUP:
-          {
-            sprintf (buf, "mouse-release %.0f %.0f",
-                 (float)event.button.x,
-                 (float)event.button.y);
-            if (host->client)
-              ufb_add_event (host->client->ufb, buf);
-            host->pointer_down[0] = 0;
-          }
-          break;
-        case SDL_KEYDOWN:
-          {
-            char buf[64] = "";
-            char *name = NULL;
-
-            buf[mmfb_unichar_to_utf8 (event.key.keysym.unicode, (void*)buf)]=0;
-            switch (event.key.keysym.sym)
-            {
-              case SDLK_F1:        name = "F1";       break;
-              case SDLK_F2:        name = "F2";       break;
-              case SDLK_F3:        name = "F3";       break;
-              case SDLK_F4:        name = "F4";       break;
-              case SDLK_F5:        name = "F5";       break;
-              case SDLK_F6:        name = "F6";       break;
-              case SDLK_F7:        name = "F7";       break;
-              case SDLK_F8:        name = "F8";       break;
-              case SDLK_F9:        name = "F9";       break;
-              case SDLK_F10:       name = "F10";      break;
-              case SDLK_F11:       name = "F11";      break;
-              case SDLK_F12:       name = "F12";      break;
-              case SDLK_ESCAPE:    name = "escape";   break;
-              case SDLK_DOWN:      name = "down";     break;
-              case SDLK_LEFT:      name = "left";     break;
-              case SDLK_UP:        name = "up";       break;
-              case SDLK_RIGHT:     name = "right";    break;
-              case SDLK_BACKSPACE: name = "backspace";break;
-              case SDLK_TAB:       name = "tab";      break;
-              case SDLK_DELETE:    name = "delete";   break;
-              case SDLK_INSERT:    name = "insert";   break;
-              case SDLK_RETURN:    name = "return";   break;
-              case SDLK_HOME:      name = "home";     break;
-              case SDLK_END:       name = "end";      break;
-              case SDLK_PAGEDOWN:  name = "page-down";break;
-              case SDLK_PAGEUP:    name = "page-up";  break;
-
-              default:
-                if (event.key.keysym.unicode < 32)
-                {
-                  buf[0] = event.key.keysym.unicode;
-                  buf[1] = 0;
-                }
-                name = (void*)&buf[0];
-            }
-            if (event.key.keysym.mod & (KMOD_CTRL))
-            {
-              char buf2[64] = "";
-              sprintf (buf2, "control-%c", event.key.keysym.sym);
-              name = buf2;
-              if (event.key.keysym.mod & (KMOD_SHIFT))
-              {
-                char buf2[64] = "";
-                sprintf (buf2, "shift-%c", event.key.keysym.sym);
-                name = buf2;
-              }
-            }
-            if (event.key.keysym.mod & (KMOD_ALT))
-            {
-              char buf2[64] = "";
-              sprintf (buf2, "alt-%c", event.key.keysym.sym);
-              name = buf2;
-              if (event.key.keysym.mod & (KMOD_SHIFT))
-              {
-                char buf2[64] = "";
-                sprintf (buf2, "shift-%c", event.key.keysym.sym);
-                name = buf2;
-              }
-            }
-            if (name)
-              if (host->client)
-                ufb_add_event (host->client->ufb, name);
-          }
-          break;
-        case SDL_VIDEORESIZE:
-          host_linux->screen = SDL_SetVideoMode (event.resize.w,
-                                           event.resize.h,32,
-                                           SDL_SWSURFACE | SDL_RESIZABLE);
-          host->width = event.resize.w;
-          host->height = event.resize.h;
-          host->stride = host->width * host->bpp;
-          if (host->client)
-            ufb_host_set_size (host->client->ufb,
-                host->width, host->height);
-          break;
-      }
-      got_event = 1;
-    }
-#endif
-    if (!got_event)
-    {
+    if (!event_check_pending (host))
       usleep (10000);
-    }
+
     host_idle_check (host);
     host_monitor_dir (host);
 

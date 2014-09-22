@@ -198,14 +198,6 @@ int main ()
       return -1;
     }
 
-  if(0)ufb_set_fps_limit (fb, 10); /* use fbdev internal rate limiter,
-                               * this usleeps; for the time remaining to fill
-                               * up a complete frame.
-                               */
-
-  //ufb_eink_mono (fb);
-
-//  ufb_set_size (fb, 256, 128);
   W = ufb_get_width (fb);
   H = ufb_get_height (fb);
 

@@ -218,10 +218,6 @@ int main ()
   fprintf (stderr, "%i %i\n", ufb_pcm_get_free_frames (fb),
                               ufb_pcm_get_frame_chunk (fb));
 
-  ufb_set_fps_limit (fb, 10); /* use fbdev internal rate limiter,
-                               * this usleeps; for the time remaining to fill
-                               * up a complete frame.
-                               */
   ufb_pcm_write (fb, data, 22);
 
   //ufb_eink_mono (fb);

@@ -26,15 +26,15 @@ typedef enum {
 Ufb*           ufb_new                  (int width, int height,
                                          UfbFlag flags, void *babl_format);
 
+// XXX: desirable with unified parameter api for:
+//   resizable
+//   fullscreen
+//   on-top
+//   decorations
+
 /* shut down an ufb.
  */
 void           ufb_destroy              (Ufb *fb);
-
-/* ufb_get_bytes_per_pixel:
- * @fb: an ufb
- * 
- * Name says it all.
- */
 int            ufb_get_bytes_per_pixel  (Ufb *fb);
 
 /* ufb_set_size:
@@ -43,7 +43,7 @@ int            ufb_get_bytes_per_pixel  (Ufb *fb);
  * @height: new height
  *
  * Resizes a buffer, the buffer is owned by the client that created it,
- * pass -1, -1 to get auto (maximized) dimensions.
+ * pass -1, -1 to get auto (maximized/fullscreen) dimensions.
  */
 void           ufb_set_size             (Ufb *fb, int width, int height);
 
@@ -56,20 +56,10 @@ const char *   ufb_get_title            (Ufb *fb);
 
 /* modify the windows position in compositor/window-manager coordinates
  */
-void           ufb_set_x (Ufb *fb, int x);
-void           ufb_set_y (Ufb *fb, int y);
-int            ufb_get_x (Ufb *fb);
-int            ufb_get_y (Ufb *fb);
-
-/* ufb_set_fps_limit:
- * @fb an ufb framebuffer
- * @fps_limit new fps limit.
- *
- * Enables an internal frame-limiter for /dev/fb use - that sleeps for the
- * time remaining for drawing a full frame. If set to 0 this rate limiter
- * is not enabled.
- */
-void           ufb_set_fps_limit        (Ufb *fb, int fps_limit);
+void           ufb_set_x                (Ufb *fb, int x);
+void           ufb_set_y                (Ufb *fb, int y);
+int            ufb_get_x                (Ufb *fb);
+int            ufb_get_y                (Ufb *fb);
 
 /* query the dimensions of an ufb, note that these values should not
  * be used as basis for stride/direct pixel updates, use the _get_buffer
@@ -179,7 +169,6 @@ typedef enum {
   UFB_s16S
 } UfbAudioFormat;
 
-
 void ufb_pcm_set_sample_rate   (Ufb *fb, int freq);
 int  ufb_pcm_get_sample_rate   (Ufb *fb);
 void ufb_pcm_set_format        (Ufb *fb, UfbAudioFormat format);
@@ -189,11 +178,5 @@ int  ufb_pcm_write             (Ufb *fb, const int8_t *data, int frames);
 int  ufb_pcm_get_queued_frames (Ufb *fb);
 int  ufb_pcm_read              (Ufb *fb, int8_t *data, int frames);
 int  ufb_pcm_bpf               (Ufb *fb);
-
-
-
-
-
-
 
 #endif

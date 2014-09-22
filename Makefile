@@ -27,5 +27,5 @@ clean-bins:
 mmfb.sdl: bin/sdl.c bin/host.c libmmfb.a
 	$(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl.c libmmfb.a -o $@
 
-mmfb.linux: bin/linux.c bin/host.c libmmfb.a
-	$(CC) -Ilib bin/host.c bin/linux.c libmmfb.a -o $@
+mmfb.linux: bin/linux.c bin/host.c libmmfb.a bin/mmfb-evsource*.c
+	$(CC) -Ilib bin/host.c bin/linux.c libmmfb.a bin/mmfb-evsource*.c -o $@
