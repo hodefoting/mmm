@@ -18,7 +18,14 @@ include .mm/lib
 #include .mm/bin
 include .mm/pkgconfig
 
-all: mmfb.sdl
+all: mmfb.linux mmfb.sdl
 
-mmfb.sdl: bin/*.c libmmfb.so
-	$(CC) -Ilib `pkg-config sdl --libs --cflags` bin/*.c libmmfb.so -o $@
+clean: clean-bins
+clean-bins:
+	rm -f mmfb.sdl mmfb.linux
+
+mmfb.sdl: bin/sdl.c bin/host.c libmmfb.a
+	$(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl.c libmmfb.a -o $@
+
+mmfb.linux: bin/linux.c bin/host.c libmmfb.a
+	$(CC) -Ilib bin/host.c bin/linux.c libmmfb.a -o $@

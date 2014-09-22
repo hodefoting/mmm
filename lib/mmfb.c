@@ -930,7 +930,7 @@ static Ufb *ufb_new_fb (int width, int height, void *babl_format)
   fb->fb_mapped_size = fb->finfo.smem_len;
   fb->front_buffer = mmap (NULL, fb->fb_mapped_size, PROT_READ | PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
 
-  memset (fb->front_buffer, 255, fb->mapped_size);
+  memset (fb->front_buffer, 255, fb->fb_mapped_size);
 
   fb->fb_width  = fb->vinfo.xres;
   fb->fb_height = fb->vinfo.yres;
