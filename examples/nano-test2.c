@@ -1,8 +1,8 @@
 /* this is to serve as a minimal - no dependencies application
  * integrating with the oc display server.
  */
-#include "mmfb.h"
-#include "mmfb-pset.h"
+#include "mmm.h"
+#include "mmm-pset.h"
 //#include "pset.h"
 #include <stdlib.h>
 #include <stdio.h>

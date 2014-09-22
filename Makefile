@@ -1,7 +1,7 @@
 CC=gcc
 LIB_PKGMODULES=
-PROJECT_NAME=mmfb
-PROJECT_DESCRIPTION=mmfb
+PROJECT_NAME=mmm
+PROJECT_DESCRIPTION=Memory Mapped Machine
 SYMBOL_PREFIX=
 CFLAGS=-Wall -Wextra -O0
 
@@ -11,21 +11,21 @@ LIB_CFILES=$(wildcard lib/*.c)
 
 #BIN_CFILES=$(wildcard bin/*.c)
 
-INSTALLED_HEADERS=lib/mmfb.h
+INSTALLED_HEADERS=lib/mmm.h
 
 include .mm/magic
 include .mm/lib
 #include .mm/bin
 include .mm/pkgconfig
 
-all: mmfb.linux mmfb.sdl
+all: mmm.linux mmm.sdl
 
 clean: clean-bins
 clean-bins:
-	rm -f mmfb.sdl mmfb.linux
+	rm -f mmm.sdl mmm.linux
 
-mmfb.sdl: bin/sdl.c bin/host.c libmmfb.a
-	$(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl.c libmmfb.a -o $@
+mmm.sdl: bin/sdl.c bin/host.c libmmm.a
+	$(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl.c libmmm.a -o $@
 
-mmfb.linux: bin/linux.c bin/host.c libmmfb.a bin/mmfb-evsource*.c
-	$(CC) -Ilib bin/host.c bin/linux.c libmmfb.a bin/mmfb-evsource*.c -o $@
+mmm.linux: bin/linux.c bin/host.c libmmm.a bin/mmm-evsource*.c
+	$(CC) -Ilib bin/host.c bin/linux.c libmmm.a bin/mmm-evsource*.c -o $@

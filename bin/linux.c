@@ -2,7 +2,7 @@
 #define _BSD_SOURCE
 #endif
 
-#include "mmfb.h"
+#include "mmm.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -19,7 +19,7 @@
 
 #include "host.h"
 
-#include "mmfb-evsource.h"
+#include "mmm-evsource.h"
 
 EvSource *evsource_ts_new (void);
 EvSource *evsource_kb_new (void);

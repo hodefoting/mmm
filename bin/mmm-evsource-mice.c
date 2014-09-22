@@ -9,8 +9,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "mmfb.h"
-#include "mmfb-evsource.h"
+#include "mmm.h"
+#include "mmm-evsource.h"
 
 /* written to work with the zforce ir touchscreen of a kobo glo,
  * probably works with a range of /dev/input/event classs of

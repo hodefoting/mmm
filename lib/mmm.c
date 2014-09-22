@@ -2,7 +2,7 @@
 #define _BSD_SOURCE
 #endif
 
-#include "mmfb.h"
+#include "mmm.h"
 
 #define UFB_WAIT_ATTEMPTS 30
 #define USE_ATOMIC_OPS 1
