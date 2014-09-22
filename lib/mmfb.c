@@ -1,7 +1,5 @@
-
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE
 #endif
 
 #include "mmfb.h"
@@ -71,7 +69,7 @@ typedef struct UfbFb {
  int32_t    height;          /* C  height of raster in pixels */
  int32_t    stride;          /* C  byte offset between starts of */
                                    /* pixelrows in memory   */
- int32_t    fb_offset;       /* offset where fb is located */
+ int32_t    fb_offset;       /* offset in file where fb is located */
 
  int32_t    flip_state;      /* CH used for synchronising flips  */
 
@@ -344,7 +342,12 @@ ufb_remap (Ufb *fb)
         if (pwrite (fb->fd, "", 1, size+1) == -1)
           fprintf (stderr, "ufb failed stretching\n");
         fsync (fb->fd);
+#if 0
         fb->shm = mremap (fb->shm, fb->mapped_size, size, MREMAP_MAYMOVE);
+#else
+        munmap (fb->shm, fb->mapped_size);
+        fb->shm = mmap (NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fd, 0);
+#endif
         if (!fb->shm)
           fprintf (stderr, "eeeek!\n");
         fb->mapped_size = size;
@@ -975,154 +978,3 @@ const char *ufb_get_message (Ufb *fb)
     }
   return NULL;
 }
-
-#if 0
-static void flip (Ufb *fb)
-{
-  if (fb->fb_width == fb->width &&
-      fb->fb_height == fb->height &&
-      fb->fb_stride == fb->stride)
-  {
-    /* fast path for full buffer copy */
-    memcpy (fb->front_buffer, fb->fb, fb->height * fb->stride);
-    return;
-  }
-
-  switch (fb->fb_bpp)
-  {
-    case 2:
-#if 0
-    {
-      int front_offset = 0;
-      char *dst = fb->front_buffer + front_offset;
-      char *src = fb->fb;
-
-      for (int scan = 0; scan < fb->height; scan++)
-      {
-        memcpy32_16 (dst, src, fb->width);
-
-        dst += fb->fb_stride;
-        src += fb->stride;
-      }
-    }
-#else
-    {
-      int front_offset = fb->shm->fb.y * fb->fb_stride + fb->shm->fb.x * fb->fb_bpp;
-      uint8_t *dst = fb->front_buffer + front_offset;
-      uint8_t *src = fb->fb;
-      int copystride = fb->fb_stride - fb->shm->fb.x * fb->fb_bpp;
-      if (copystride > fb->width * fb->fb_bpp)
-        copystride = fb->width * fb->fb_bpp;
-      copystride /= fb->fb_bpp;
-      for (int scan = 0; scan < fb->height; scan++)
-      {
-        if (dst >= fb->front_buffer &&
-            dst <  fb->front_buffer + fb->fb_stride * (fb->fb_height) - copystride)
-        {
-          memcpy32_16 (dst, src, copystride);
-        }
-        dst += fb->fb_stride;
-        src += fb->stride;
-      }
-#if 0
-      /* draw cursor */
-      for (int u = -2; u < 2; u++)
-      for (int v = -2; v < 2; v++)
-      {
-        double cx, cy;
-        _ufb_get_coords (fb, &cx, &cy);
-        cx += u;
-        cy += v;
-        front_offset = cy * fb->fb_stride + cx * fb->fb_bpp;
-        dst = fb->front_buffer + front_offset;
-        if (dst >= fb->front_buffer &&
-            dst <  fb->front_buffer + fb->fb_stride * (fb->fb_height) - fb->fb_bpp &&
-            cx < fb->fb_width &&
-            cx > 0)
-        {
-          memset (dst, 255, fb->fb_bpp);
-        }
-      }
-      for (int u = -1; u < 1; u++)
-      for (int v = -1; v < 1; v++)
-      {
-        double cx, cy;
-        _ufb_get_coords (fb, &cx, &cy);
-        cx += u;
-        cy += v;
-        front_offset = cy * fb->fb_stride + cx * fb->fb_bpp;
-        dst = fb->front_buffer + front_offset;
-        if (dst >= fb->front_buffer &&
-            dst <  fb->front_buffer + fb->fb_stride * (fb->fb_height) - fb->fb_bpp &&
-            cx < fb->fb_width &&
-            cx > 0)
-        {
-          memset (dst, 0, fb->fb_bpp);
-        }
-      }
-#endif
-    }
-
-#endif
-
-    break;
-    case 4:
-    {
-      int front_offset = fb->shm->fb.y * fb->fb_stride + fb->shm->fb.x * fb->fb_bpp;
-      uint8_t *dst = fb->front_buffer + front_offset;
-      uint8_t *src = fb->fb;
-      int copystride = fb->fb_stride - fb->shm->fb.x * fb->fb_bpp;
-      if (copystride > fb->width * fb->fb_bpp)
-        copystride = fb->width * fb->fb_bpp;
-      for (int scan = 0; scan < fb->height; scan++)
-      {
-        if (dst >= fb->front_buffer &&
-            dst <  fb->front_buffer + fb->fb_stride * (fb->fb_height) - copystride)
-        {
-          memcpy (dst, src, copystride);
-        }
-        dst += fb->fb_stride;
-        src += fb->stride;
-      }
-#if 0
-      /* draw cursor */
-      for (int u = -2; u < 2; u++)
-      for (int v = -2; v < 2; v++)
-      {
-        double cx, cy;
-        _ufb_get_coords (fb, &cx, &cy);
-        cx += u;
-        cy += v;
-        front_offset = cy * fb->fb_stride + cx * fb->fb_bpp;
-        dst = fb->front_buffer + front_offset;
-        if (dst >= fb->front_buffer &&
-            dst <  fb->front_buffer + fb->fb_stride * (fb->fb_height) - fb->fb_bpp &&
-            cx < fb->fb_width &&
-            cx > 0)
-        {
-          memset (dst, 255, fb->fb_bpp);
-        }
-      }
-      for (int u = -1; u < 1; u++)
-      for (int v = -1; v < 1; v++)
-      {
-        double cx, cy;
-        _ufb_get_coords (fb, &cx, &cy);
-        cx += u;
-        cy += v;
-        front_offset = cy * fb->fb_stride + cx * fb->fb_bpp;
-        dst = fb->front_buffer + front_offset;
-        if (dst >= fb->front_buffer &&
-            dst <  fb->front_buffer + fb->fb_stride * (fb->fb_height) - fb->fb_bpp &&
-            cx < fb->fb_width &&
-            cx > 0)
-        {
-          memset (dst, 0, fb->fb_bpp);
-        }
-      }
-#endif
-    }
-    break;
-  }
-}
-#endif
