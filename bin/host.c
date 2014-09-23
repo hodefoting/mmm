@@ -48,9 +48,10 @@ void host_add_dirt (Host *host, int x0, int y0, int x1, int y1)
 
 void validate_client (Host *host, const char *client_name)
 {
-  if (host->client)
+  MmmList *l;
+  for (l = host->clients; l; l = l->next)
   {
-    Client *client = host->client;
+    Client *client = l->data;
     if (client->filename &&
         !strcmp (client->filename, client_name))
     {
@@ -90,13 +91,25 @@ void validate_client (Host *host, const char *client_name)
           mmm_get_y (client->mmm) == 0)
       {
         static int pos = 0;
-        mmm_set_x (client->mmm, pos);
-        mmm_set_y (client->mmm, pos);
+        int width  = mmm_get_width (client->mmm);
+        int height = mmm_get_width (client->mmm);
+
+        if (width < 0 || height < 0)
+        {
+          mmm_host_set_size (client->mmm, host->width, host->height);
+          mmm_set_x (client->mmm, 0);
+          mmm_set_y (client->mmm, 0);
+        }
+        else
+        {
+          mmm_set_x (client->mmm, (host->width - width) / 2);
+          mmm_set_y (client->mmm, (host->height - height) / 2);
+        }
 
         //pos += 12;
       }
     }
-    host->client = client;
+    mmm_list_append (&host->clients, client);
 
     fprintf (stderr, "new client!\n");
   }
@@ -123,10 +136,11 @@ void host_queue_draw (Host *host, MmmRectangle *rect)
 
 void host_monitor_dir (Host *host)
 {
+  MmmList *l;
 again:
-  if (host->client)
+  for (l = host->clients; l; l = l->next)
   {
-    Client *client = host->client;
+    Client *client = l->data;
     if (!pid_is_alive (client->pid))
     {
       char tmp[256];
@@ -141,7 +155,8 @@ again:
       unlink (tmp);
       host_has_quit = 1;
       free (client);
-      host->client = NULL;
+      mmm_list_remove (&host->clients, client);
+
 
       host_queue_draw (host, NULL);
       goto again;
@@ -162,12 +177,22 @@ again:
   closedir (dir);
 }
 
+void host_window_raise (Host *host, Client *focused)
+{
+  if (!focused)
+    return;
+
+  mmm_list_remove (&host->clients, focused);
+  mmm_list_append (&host->clients, focused);
+}
+
 int host_idle_check (void *data)
 {
   Host *host = data;
-  if (host->client)
+  MmmList *l;
+  for (l = host->clients; l; l = l->next)
   {
-    Client *client = host->client;
+    Client *client = l->data;
 
     int x, y, width, height;
     if (mmm_get_damage (client->mmm, &x, &y, &width, &height))

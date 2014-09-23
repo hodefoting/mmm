@@ -45,6 +45,12 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
   x = mmm_get_x (client->mmm);
   y = mmm_get_y (client->mmm);
 
+  if (ptr_x >= x && ptr_x < x + width &&
+      ptr_y >= y && ptr_y < y + height)
+    {
+      host->focused = client;
+    }
+
   if (pixels && width && height)
   {
     int front_offset = y * host->stride + x * host->bpp;
@@ -67,10 +73,10 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 
     mmm_read_done (client->mmm);
   }
-  SDL_UpdateRect(screen, 0,0,0,0);
 
   mmm_host_get_size (client->mmm, &cwidth, &cheight);
 
+  if (host->single_app)
   if ( (cwidth  && cwidth  != host->width) ||
        (cheight && cheight != host->height))
   {
@@ -200,7 +206,7 @@ mmfb_unichar_to_utf8 (unsigned int  ch,
     return 0;
 }
 
-static int main_sdl (const char *path)
+static int main_sdl (const char *path, int single)
 {
   Host *host;
 
@@ -214,6 +220,8 @@ static int main_sdl (const char *path)
 
   atexit (SDL_Quit);
 
+  host->single_app = 1;
+
   while (!host_has_quit)
   {
     int got_event = 0;
@@ -225,15 +233,16 @@ static int main_sdl (const char *path)
         case SDL_MOUSEMOTION:
           {
             if (host->pointer_down[0])
-            sprintf (buf, "mouse-drag %.0f %.0f",
-                 (float)event.motion.x,
-                 (float)event.motion.y);
+              sprintf (buf, "mouse-drag %.0f %.0f",
+                   (float)event.motion.x,
+                   (float)event.motion.y);
             else
-            sprintf (buf, "mouse-motion %.0f %.0f",
-                 (float)event.motion.x,
-                 (float)event.motion.y);
-            if (host->client)
-              mmm_add_event (host->client->mmm, buf);
+              sprintf (buf, "mouse-motion %.0f %.0f",
+                   (float)event.motion.x,
+                   (float)event.motion.y);
+
+            if (host->focused)
+              mmm_add_event (host->focused->mmm, buf);
           }
           break;
         case SDL_MOUSEBUTTONDOWN:
@@ -241,8 +250,8 @@ static int main_sdl (const char *path)
             sprintf (buf, "mouse-press %.0f %.0f",
                  (float)event.button.x,
                  (float)event.button.y);
-            if (host->client)
-              mmm_add_event (host->client->mmm, buf);
+            if (host->focused)
+              mmm_add_event (host->focused->mmm, buf);
             host->pointer_down[0] = 1;
           }
           break;
@@ -251,8 +260,9 @@ static int main_sdl (const char *path)
             sprintf (buf, "mouse-release %.0f %.0f",
                  (float)event.button.x,
                  (float)event.button.y);
-            if (host->client)
-              mmm_add_event (host->client->mmm, buf);
+
+            if (host->focused)
+              mmm_add_event (host->focused->mmm, buf);
             host->pointer_down[0] = 0;
           }
           break;
@@ -324,8 +334,8 @@ static int main_sdl (const char *path)
               }
             }
             if (name)
-              if (host->client)
-                mmm_add_event (host->client->mmm, name);
+              if (host->focused)
+                mmm_add_event (host->focused->mmm, name);
           }
           break;
         case SDL_VIDEORESIZE:
@@ -335,8 +345,9 @@ static int main_sdl (const char *path)
           host->width = event.resize.w;
           host->height = event.resize.h;
           host->stride = host->width * host->bpp;
-          if (host->client)
-            mmm_host_set_size (host->client->mmm,
+
+          if (host->single_app && host->focused)
+            mmm_host_set_size (host->focused->mmm,
                 host->width, host->height);
           break;
       }
@@ -348,28 +359,65 @@ static int main_sdl (const char *path)
     }
     host_idle_check (host);
     host_monitor_dir (host);
+    host->focused = NULL;
 
-    if (host->client)
-      render_client (host, host->client, 0, 0);
+    {
+      int x, y;
+      SDL_GetMouseState(&x, &y);
 
+      MmmList *l;
+      for (l = host->clients; l; l = l->next)
+      {
+        render_client (host, l->data, x, y);
+      }
+    }
+
+    SDL_UpdateRect(host_sdl->screen, 0,0,0,0);
     host_clear_dirt (host);
   }
+
+  if (host->single_app)
+  {
+    rmdir (host->fbdir);
+  }
+
   return 0;
 }
 
 int main (int argc, char **argv)
 {
-  const char *path = "/tmp/mmm";
-  setenv ("MMM_PATH", path, 1);
+  char path[256];
 
   if (argv[1] == NULL)
-    return main_sdl (path);
+  {
+    if (!getenv ("MMM_PATH"))
+    {
+      sprintf (path, "/tmp/mmm-%i", getpid());
+      setenv ("MMM_PATH", path, 1);
+      mkdir (path, 0777);
+    }
+    return main_sdl (path, 0);
+  }
+
+  if (argv[1][0] == '-' &&
+      argv[1][1] == 'p' &&
+      argv[2])
+  {
+    return main_sdl (argv[2], 1);
+  }
+
+  if (!getenv ("MMM_PATH"))
+  {
+    sprintf (path, "/tmp/mmm-%i", getpid());
+    setenv ("MMM_PATH", path, 1);
+    mkdir (path, 0777);
+  }
 
   if (argv[1])
     switch (fork())
     {
       case 0:
-        return main_sdl (path);
+        return main_sdl (path, 1);
       case -1:
         fprintf (stderr, "fork failed\n");
         return 0;

@@ -80,9 +80,9 @@ static int event_check_pending (Host *host)
       char *event = evsource_get_event (host_linux->evsource[i]);
       if (event)
       {
-        if (host->client)
+        if (host->focused)
         {
-          mmm_add_event (host->client->mmm, event);
+          mmm_add_event (host->focused->mmm, event);
           free (event);
           had_event ++;
         }
@@ -203,6 +203,12 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 
   x = mmm_get_x (client->mmm);
   y = mmm_get_y (client->mmm);
+
+  if (ptr_x >= x && ptr_x < x + width &&
+      ptr_y >= y && ptr_y < y + height)
+    {
+      host->focused = client;
+    }
 
   if (pixels && width && height)
   {
@@ -401,22 +407,54 @@ static int main_linux (const char *path)
 
     host_idle_check (host);
     host_monitor_dir (host);
+    host->focused = NULL;
 
-    if (host->client)
-      render_client (host, host->client, px, py);
+    {
+      MmmList *l;
+      for (l = host->clients; l; l = l->next)
+      {
+        render_client (host, l->data, px, py);
+      }
+    }
 
     host_clear_dirt (host);
+  }
+
+  if (host->single_app)
+  {
+    rmdir (host->fbdir);
   }
   return 0;
 }
 
 int main (int argc, char **argv)
 {
-  const char *path = "/tmp/mmm";
-  setenv ("MMM_PATH", path, 1);
-
+  char path[256];
+  
   if (argv[1] == NULL)
+  {
+    if (!getenv ("MMM_PATH"))
+    {
+      sprintf (path, "/tmp/mmm-%i", getpid());
+      setenv ("MMM_PATH", path, 1);
+      mkdir (path, 0777);
+    }
     return main_linux (path);
+  }
+
+  if (argv[1][0] == '-' &&
+      argv[1][1] == 'p' &&
+      argv[2])
+  {
+    return main_linux (argv[2]);
+  }
+
+  if (!getenv ("MMM_PATH"))
+  {
+    sprintf (path, "/tmp/mmm-%i", getpid());
+    setenv ("MMM_PATH", path, 1);
+    mkdir (path, 0777);
+  }
 
   if (argv[1])
     switch (fork())

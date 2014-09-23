@@ -195,4 +195,9 @@ int  mmm_pcm_bpf               (Mmm *fb);
 
 #define MMM_PCM_BUFFER_SIZE  8192
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#define LOG(a) fprintf(stderr,"%i: %s\n", getpid(), a)
+
 #endif

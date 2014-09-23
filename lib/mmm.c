@@ -18,7 +18,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "mmm.h"
 
-#define MMM_WAIT_ATTEMPTS 30
+#define MMM_WAIT_ATTEMPTS 150
 #define USE_ATOMIC_OPS 1
 
 #include <fcntl.h>
@@ -141,7 +141,6 @@ struct  _MmmShm {
   MmmBlock       pixeldata; /* offset for pixeldata is defined in fb */
 };
 
-static Mmm *mmm_new_shm (int width, int height, void *babl_format);
 
 struct Mmm_
 {
@@ -203,7 +202,7 @@ mmm_wait_neutral (Mmm *fb)
   int attempts = MMM_WAIT_ATTEMPTS;
 
   while (fb->shm->fb.flip_state != MMM_NEUTRAL && --attempts)
-    usleep (500);
+    usleep (1000);
 
   return (attempts > 0 ? 0 : -1);
 } 
@@ -288,7 +287,7 @@ mmm_wait_neutral_or_wait_flip (Mmm *fb)
     usleep (500);
 
   if (attempts < 1)
-    fprintf (stderr, "eeew\n");
+    fprintf (stderr, "waited too long\n");
 
   return   (attempts > 0 ? 0 : -1 );
 }
@@ -484,21 +483,37 @@ const char *mmm_get_event (Mmm *fb)
   return NULL;
 }
 
+static Mmm *mmm_new_shm (const char *mmm_path, int width, int height, void *babl_format);
+
 Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
 {
   Mmm *fb = NULL;
+  char *path = NULL;
+  LOG("mmm_new()");
+  
+  path = getenv ("MMM_PATH");
 
-  if (!getenv ("MMM_PATH"))
+  if (!path)
   {
+    char mmm_path[256];
+    sprintf (mmm_path, "/tmp/mmm-%i", getpid());
+    path = mmm_path;
+    {
+      char tmp[512];
+      sprintf (tmp, "mkdir %s &>/dev/null", mmm_path);
+      system (tmp);
+    }
+
     switch (fork())
     {
       case 0: /* child */
-        execlp ("mmm", "mmm", NULL);
+        execlp ("mmm", "mmm", "-p", mmm_path, NULL);
       case -1:
         fprintf (stderr, "fork failed\n");
         return 0;
     }
-    setenv ("MMM_PATH", "/tmp/mmm", 1);
+    setenv ("MMM_PATH", mmm_path, 1);
+    LOG("set path");
   }
 
   {
@@ -506,7 +521,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
     const char *env = getenv ("MMM_PATH");
     if (env && !is_compositor)
     {
-      fb = mmm_new_shm (width, height, babl_format);
+      fb = mmm_new_shm (path, width, height, babl_format);
       mmm_set_size (fb, width, height);
     }
   }
@@ -580,7 +595,7 @@ static void mmm_init_header (MmmShm *shm)
   memcpy (&shm->pixeldata.type, MMM_fbdata, 8);
 }
 
-static Mmm *mmm_new_shm (int width, int height, void *babl_format)
+static Mmm *mmm_new_shm (const char *mmm_path, int width, int height, void *babl_format)
 {
   Mmm *fb = calloc (sizeof (Mmm), 1);
   if (width < 0 && height < 0)
@@ -598,8 +613,6 @@ static Mmm *mmm_new_shm (int width, int height, void *babl_format)
     free (fb->path);
   {
     char buf[512];
-    const char *mmm_path = getenv("MMM_PATH");
-    if (!mmm_path) mmm_path = "/tmp";
     sprintf (buf, "%s/fb.XXXXXX", mmm_path);
     fb->path = strdup (buf);
   }

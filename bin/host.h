@@ -16,6 +16,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef HOST_H
 #define HOST_H
 
+#include "mmm-list.h"
+
 typedef struct _Client    Client;
 typedef struct _Host      Host;
 
@@ -33,7 +35,8 @@ struct _Client
 struct _Host
 {
   char        *fbdir;
-  Client      *client;
+  MmmList     *clients;
+  Client      *focused;
   int          fullscreen;
   int          dirty_x0;
   int          dirty_y0;
@@ -44,6 +47,8 @@ struct _Host
   int          stride;
   int          height;
   int          pointer_down[8];
+
+  int          single_app;
 };
 
 void host_clear_dirt (Host *host);
