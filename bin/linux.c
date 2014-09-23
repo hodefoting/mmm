@@ -19,7 +19,7 @@
 
 #include "host.h"
 
-#include "mmm-evsource.h"
+#include "linux-evsource.h"
 
 EvSource *evsource_ts_new (void);
 EvSource *evsource_kb_new (void);
@@ -107,6 +107,85 @@ static inline void memcpy32_16 (uint8_t *dst, const uint8_t *src, int count)
     }
 }
 
+void _mmm_get_coords (Mmm *mmm, double *x, double *y);
+
+#if 0
+static uint8_t cursor_white[16][16]={
+{1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0},
+{0,1,0,1,0,0,1,1,0,0,0,0,0,0,0,0},
+{0,0,1,0,1,1,0,0,1,1,0,0,0,0,0,0},
+{0,0,1,0,1,0,1,1,0,0,1,1,0,0,0,0},
+{0,0,0,1,0,1,0,0,1,1,0,0,1,1,0,0},
+{0,0,0,1,0,1,0,0,0,0,1,1,0,0,1,1},
+{0,0,0,0,1,0,1,0,0,0,0,1,1,0,1,0},
+{0,0,0,0,1,0,1,0,0,0,0,1,0,1,0,0},
+{0,0,0,0,0,1,0,1,0,0,1,0,1,0,0,0},
+{0,0,0,0,0,1,0,1,0,1,0,1,0,0,0,0},
+{0,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0},
+{0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0}};
+
+static uint8_t cursor_black[16][16]={
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,1,0,1,1,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,1,0,0,1,1,0,0,0,0,0,0,0,0},
+{0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0},
+{0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,0},
+{0,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0},
+{0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0},
+{0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0},
+{0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0},
+{0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0},
+{0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+
+#else
+
+static uint8_t cursor_white[16][16]={
+{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0},
+{1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0},
+{1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0},
+{1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0},
+{1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0},
+{1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0},
+{1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0},
+{1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0},
+{1,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0},
+{1,1,0,1,0,0,0,1,0,0,0,0,0,0,0,0},
+{0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0},
+{0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0}};
+
+static uint8_t cursor_black[16][16]={
+{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0},
+{1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0},
+{1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0},
+{1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0},
+{1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0},
+{1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0},
+{1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0},
+{1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0},
+{1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0},
+{1,1,0,0,1,1,1,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+
+#endif
+
 static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 {
   HostLinux *host_linux = (void*)host;
@@ -149,70 +228,44 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       dst += host_linux->fb_stride;
       src += rowstride;
     }
-
     mmm_read_done (client->mmm);
   }
 
+  { /* draw cursor */
+    int u,v;
+    for (v = 0; v < 16; v ++)
+      if (v + ptr_y > 0 && v + ptr_y < host->height)
+        for (u = 0; u < 16; u ++)
+        {
+          if (u + ptr_x > 0 && u + ptr_x < host->width)
+          {
+            int o = host_linux->fb_stride * ((int)ptr_y+v) + host->bpp * ((int)(ptr_x)+u);
+            if (cursor_white[v][u])
+            {
+              host_linux->front_buffer[o+0] = 255;
+              host_linux->front_buffer[o+1] = 255;
+              if (host->bpp == 4)
+              {
+                host_linux->front_buffer[o+2] = 255;
+                host_linux->front_buffer[o+3] = 255;
+              }
+            }
+            else if (cursor_black[v][u])
+            {
+              host_linux->front_buffer[o+0] = 0;
+              host_linux->front_buffer[o+1] = 0;
+              if (host->bpp == 4)
+              {
+                host_linux->front_buffer[o+2] = 0;
+                host_linux->front_buffer[o+3] = 255;
+              }
+            }
+          }
+        }
+  }
+
   mmm_host_get_size (client->mmm, &cwidth, &cheight);
-
-#if 0
-  if ( (cwidth  && cwidth  != host->width) ||
-       (cheight && cheight != host->height))
-  {
-    fprintf (stderr, "%i, %i\n", cwidth, cheight);
-    host_linux->screen = SDL_SetVideoMode (cwidth,
-                                         cheight,32,
-                                         SDL_SWSURFACE | SDL_RESIZABLE);
-    host->width = cwidth;
-    host->height = cheight;
-    host->stride = host->width * host->bpp;
-  }
-#endif
 }
-
-#if 0
-
-void host_destroy (Host *host)
-{
-  free (host);
-}
-
-static void mmfb_linux_fullscreen (Host *host, int fullscreen)
-{
-  HostLinux *host_linux = (void*)host;
-  SDL_Surface *screen = host_linux->screen;
-  int width = 640, height = 480;
-
-  if (fullscreen)
-  {
-    SDL_Rect **modes;
-    modes = SDL_ListModes(NULL, SDL_HWSURFACE|SDL_FULLSCREEN);
-    if (modes == (SDL_Rect**)0) {
-        fprintf(stderr, "No modes available!\n");
-        return;
-    }
-
-    width = modes[0]->w;
-    height = modes[0]->h;
-
-    screen = SDL_SetVideoMode(width, height, 32,
-                              SDL_SWSURFACE | SDL_FULLSCREEN );
-    host_linux->screen = screen;
-  }
-  else
-  {
-    screen = SDL_SetVideoMode(width, height, 32,
-                              SDL_SWSURFACE | SDL_RESIZABLE );
-    host_linux->screen = screen;
-  }
-  host->width = width;
-  host->bpp = 4;
-  host->stride = host->width * host->bpp;
-  host->height = height;
-  host->fullscreen = fullscreen;
-}
-
-#endif
 
 Host *host_linux_new (const char *path, int width, int height)
 {
@@ -279,8 +332,11 @@ Host *host_linux_new (const char *path, int width, int height)
   host_linux->front_buffer = mmap (NULL, host_linux->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, host_linux->fb_fd, 0);
   memset (host_linux->front_buffer, 255, host_linux->fb_mapped_size);
 
-  host->width = host_linux->vinfo.xres;
-  host->height = host_linux->vinfo.yres;
+  if (host->fullscreen)
+  {
+    host->width = host_linux->vinfo.xres;
+    host->height = host_linux->vinfo.yres;
+  }
 
   host_clear_dirt (host);
 
@@ -337,14 +393,17 @@ static int main_linux (const char *path)
 
   while (!host_has_quit)
   {
+    double px, py;
     if (!event_check_pending (host))
       usleep (10000);
+
+    _mmm_get_coords (NULL, &px, &py);
 
     host_idle_check (host);
     host_monitor_dir (host);
 
     if (host->client)
-      render_client (host, host->client, 0, 0);
+      render_client (host, host->client, px, py);
 
     host_clear_dirt (host);
   }

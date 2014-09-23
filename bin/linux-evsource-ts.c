@@ -1,16 +1,9 @@
 #include <fcntl.h>
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <linux/fb.h>
 #include <linux/input.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include "mmm-evsource.h"
+#include "linux-evsource.h"
 
 /* written to work with the zforce ir touchscreen of a kobo glo,
  * probably works with a range of /dev/input/event classs of
