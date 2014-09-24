@@ -47,14 +47,6 @@ struct _HostLinux
   int          evsource_count;
 };
 
-void linux_warp_cursor (Host *host, int x, int y)
-{
-  HostLinux *host_linux = (void*)host;
-  int i;
-  for (i = 0; i < host_linux->evsource_count; i++)
-    evsource_set_coord (host_linux->evsource[i], x, y);
-}
-
 EvSource *evsource_ts_new (void);
 EvSource *evsource_kb_new (void);
 EvSource *evsource_mice_new (void);
@@ -109,28 +101,26 @@ static inline void memcpy32_16 (uint8_t *dst, const uint8_t *src, int count)
 
 void _mmm_get_coords (Mmm *mmm, double *x, double *y);
 
-#if 0
+#if 1
 static uint8_t cursor[16][16]={
 {1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 {1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
 {0,1,2,2,1,1,0,0,0,0,0,0,0,0,0,0},
 {0,1,2,2,2,2,1,1,0,0,0,0,0,0,0,0},
 {0,0,1,2,2,2,2,2,1,1,0,0,0,0,0,0},
-{0,0,1,2,2,0,2,2,2,2,1,1,0,0,0,0},
-{0,0,0,1,2,2,0,0,2,2,2,2,1,1,0,0},
-{0,0,0,1,2,2,0,0,0,0,2,2,2,2,1,1},
-{0,0,0,0,1,2,2,0,0,0,0,0,2,2,1,0},
-{0,0,0,0,1,2,2,0,0,0,0,2,2,1,0,0},
-{0,0,0,0,0,1,2,2,0,0,2,2,1,0,0,0},
-{0,0,0,0,0,1,2,2,0,2,2,1,0,0,0,0},
-{0,0,0,0,0,0,1,2,2,2,1,0,0,0,0,0},
-{0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0},
+{0,0,1,2,2,2,2,2,2,2,1,1,0,0,0,0},
+{0,0,0,1,2,2,2,2,2,2,2,2,1,1,0,0},
+{0,0,0,1,2,2,2,2,1,1,1,1,1,1,1,1},
+{0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0},
+{0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0},
 {0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0}};
 
 #else
-
-#if 0
 
 static uint8_t cursor[16][16]={
 {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -150,29 +140,8 @@ static uint8_t cursor[16][16]={
 {0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0},
 {0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0}};
 
-#else
-
-static uint8_t cursor[16][16]={
-{1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,1,2,2,1,1,0,0,0,0,0,0,0,0,0,0},
-{0,1,2,2,2,2,1,1,0,0,0,0,0,0,0,0},
-{0,0,1,2,2,2,2,2,1,1,0,0,0,0,0,0},
-{0,0,1,2,2,2,2,2,2,2,1,1,0,0,0,0},
-{0,0,0,1,2,2,2,2,2,2,2,2,1,1,0,0},
-{0,0,0,1,2,2,2,2,1,1,1,1,1,1,1,1},
-{0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0},
-{0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0}};
-
 #endif
 
-#endif
 
 static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 {
@@ -373,6 +342,14 @@ mmfb_unichar_to_utf8 (unsigned int  ch,
     return 0;
 }
 
+void linux_warp_cursor (Host *host, int x, int y)
+{
+  HostLinux *host_linux = (void*)host;
+  int i;
+  for (i = 0; i < host_linux->evsource_count; i++)
+    evsource_set_coord (host_linux->evsource[i], x, y);
+}
+
 static int main_linux (const char *path)
 {
   Host *host;
@@ -383,13 +360,25 @@ static int main_linux (const char *path)
   host_linux = (void*) host;
   unsetenv ("MMM_IS_COMPOSITOR");
 
+  //atexit (SDL_Quit);
+
   while (!host_has_quit)
   {
     double px, py;
+    int warp = 0;
     if (!event_check_pending (host))
       usleep (10000);
 
     _mmm_get_coords (NULL, &px, &py);
+
+    if (px < 0) { px = 0; warp = 1; }
+    if (py < 0) { py = 0; warp = 1; }
+    if (py > host->height) { py = host->height; warp = 1; }
+    if (px > host->width) { px = host->width; warp = 1; }
+    if (warp)
+    {
+      linux_warp_cursor (host, px, py);
+    }
 
     host_idle_check (host);
     host_monitor_dir (host);
@@ -404,11 +393,6 @@ static int main_linux (const char *path)
     }
 
     host_clear_dirt (host);
-  }
-
-  if (host->single_app)
-  {
-    rmdir (host->fbdir);
   }
   return 0;
 }
