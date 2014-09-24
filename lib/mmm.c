@@ -18,8 +18,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "mmm.h"
 
-#define MMM_WAIT_ATTEMPTS 150
-#define USE_ATOMIC_OPS 1
+#define MMM_WAIT_ATTEMPTS 150   /* each attempts is 1ms */
+#define USE_ATOMIC_OPS    1
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -45,15 +45,6 @@ typedef enum {
 typedef struct _MmmShm MmmShm;
 
 #define MMM_AUDIO_BUFFER_SIZE  4096
-
-#define U64_CONSTANT(str) (*((uint64_t*)str))
-
-static char *MMM_magic    = "MMM ░ ";
-static char *MMM_fb       = "FB      ";
-static char *MMM_events   = "EVENTS  ";
-static char *MMM_messages = "MESSAGES";
-static char *MMM_pcm      = "PCM     ";
-static char *MMM_fbdata   = "FBDATA  ";
 
 typedef struct MmmBlock {
   uint64_t type;
@@ -102,6 +93,10 @@ typedef struct MmmFb {
  uint32_t   pad[32];
 } MmmFb;
 
+/* XXX: all of event/message/pcm can share more code and logic if using
+ * variable length event strings (still 0 terminated).
+ */
+
 typedef struct MmmEvents {
   MmmBlock       block;
   int16_t        read;      /* C  last event_no which has been read    */
@@ -141,10 +136,9 @@ struct  _MmmShm {
   MmmBlock       pixeldata; /* offset for pixeldata is defined in fb */
 };
 
-
 struct Mmm_
 {
-  int          bpp;      /* do not move, inline function in header ..*/
+  int          bpp;      /* do not move, used inline in pset header ..*/
   int          stride;   /* .. depends on position of bpp/stride */
 
   uint8_t     *fb;       /* pointer to actual pixels */
@@ -166,6 +160,15 @@ struct Mmm_
   MmmBlock    *events;
   MmmBlock    *messages;
 };
+
+#define U64_CONSTANT(str) (*((uint64_t*)str))
+
+static char *MMM_magic    = "MMM ░ ";
+static char *MMM_fb       = "FB      ";
+static char *MMM_events   = "EVENTS  ";
+static char *MMM_messages = "MESSAGES";
+static char *MMM_pcm      = "PCM     ";
+static char *MMM_fbdata   = "FBDATA  ";
 
 static void mmm_remap (Mmm *fb);
 
@@ -287,7 +290,7 @@ mmm_wait_neutral_or_wait_flip (Mmm *fb)
     usleep (500);
 
   if (attempts < 1)
-    fprintf (stderr, "waited too long\n");
+    fprintf (stderr, "mmm host timed out waiting on client\n");
 
   return   (attempts > 0 ? 0 : -1 );
 }
@@ -363,7 +366,7 @@ mmm_remap (Mmm *fb)
         fb->shm = mmap (NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fd, 0);
 #endif
         if (!fb->shm)
-          fprintf (stderr, "eeeek!\n");
+          fprintf (stderr, "mmm failed mmaping client\n");
         fb->mapped_size = size;
       }
     if (!fb->compositor_side)
@@ -614,7 +617,6 @@ static Mmm *mmm_new_shm (const char *mmm_path, int width, int height, void *babl
     sprintf (buf, "%s/fb.XXXXXX", mmm_path);
     fb->path = strdup (buf);
   }
-  fprintf (stderr, "%s\n", fb->path);
   fb->fd = mkstemp (fb->path);
   pwrite (fb->fd, "", 1, sizeof (MmmShm) + fb->stride * fb->height);
   fsync (fb->fd);
@@ -632,7 +634,6 @@ static Mmm *mmm_new_shm (const char *mmm_path, int width, int height, void *babl
   fb->shm->fb.height = fb->height;
   fb->shm->fb.flip_state = MMM_NEUTRAL;
   fb->shm->header.pid = getpid ();
-  fprintf (stderr, "pidset\n");
   mmm_remap (fb);
 
   return fb;
@@ -981,7 +982,7 @@ void mmm_add_message (Mmm *fb, const char *message)
     {
       static int once = 0;
       if (!once)
-        fprintf (stderr, "oc message queue overflow\n");
+        fprintf (stderr, "mmm message queue overflow\n");
       once = 1;
       return;
     }
@@ -1004,3 +1005,4 @@ const char *mmm_get_message (Mmm *fb)
     }
   return NULL;
 }
+

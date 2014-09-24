@@ -80,8 +80,6 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
   if ( (cwidth  && cwidth  != host->width) ||
        (cheight && cheight != host->height))
   {
-    fprintf (stderr, "%i, %i\n", cwidth, cheight);
-
     host_sdl->screen = SDL_SetVideoMode (cwidth,
                                          cheight,32,
                                          SDL_SWSURFACE | SDL_RESIZABLE);

@@ -58,7 +58,6 @@ void validate_client (Host *host, const char *client_name)
       return;
     }
   }
-  fprintf (stderr, "incoming client %s\n", client_name);
 
   {
     Client *client = calloc (sizeof (Client), 1);
@@ -74,8 +73,6 @@ void validate_client (Host *host, const char *client_name)
       free (client);
       return;
     }
-
-    fprintf (stderr, "new client %li\n", client->pid);
 
     if (!client->mmm)
     {
@@ -112,8 +109,6 @@ void validate_client (Host *host, const char *client_name)
       }
     }
     mmm_list_append (&host->clients, client);
-
-    fprintf (stderr, "new client!\n");
   }
 }
 
@@ -153,7 +148,6 @@ again:
         client->mmm = NULL;
       }
 
-      fprintf (stderr, "removed client %li\n", client->pid);
       unlink (tmp);
       host_has_quit = 1;
       free (client);
@@ -215,7 +209,7 @@ int host_idle_check (void *data)
 
     while (mmm_has_message (client->mmm))
     {
-      fprintf (stderr, "%p: %s\n", client->mmm, mmm_get_message (client->mmm));
+      fprintf (stderr, "message: %p: %s\n", client->mmm, mmm_get_message (client->mmm));
     }
   }
   return 1;
