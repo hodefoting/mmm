@@ -102,8 +102,10 @@ void validate_client (Host *host, const char *client_name)
         }
         else
         {
-          mmm_set_x (client->mmm, (host->width - width) / 2);
-          mmm_set_y (client->mmm, (host->height - height) / 2);
+          mmm_set_x (client->mmm, 0);
+          mmm_set_y (client->mmm, 0);
+          //mmm_set_x (client->mmm, (host->width - width) / 2);
+          //mmm_set_y (client->mmm, (host->height - height) / 2);
         }
 
         //pos += 12;

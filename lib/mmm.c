@@ -489,7 +489,6 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
 {
   Mmm *fb = NULL;
   char *path = NULL;
-  LOG("mmm_new()");
   
   path = getenv ("MMM_PATH");
 
@@ -513,7 +512,6 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
         return 0;
     }
     setenv ("MMM_PATH", mmm_path, 1);
-    LOG("set path");
   }
 
   {

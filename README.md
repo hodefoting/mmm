@@ -26,7 +26,7 @@ variable is not set), the client will try to spawn a child process host.
 
 The mmm library provides code for clients and hosts to create and interact
 with such machines/files through mmap. The API is exposed through the [mmm.h
-](../../blob/master/lib/mmm.h#L1) header.
+](../../blob/master/lib/mmm.h#L36) header.
 
 host backends
 -------------
