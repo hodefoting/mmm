@@ -298,6 +298,7 @@ Host *host_linux_new (const char *path, int width, int height)
   if (host->fullscreen)
   {
     host->width = host_linux->vinfo.xres;
+    host->stride = host->width * host->bpp;
     host->height = host_linux->vinfo.yres;
   }
 
@@ -355,7 +356,7 @@ static int main_linux (const char *path)
   Host *host;
 
   setenv ("MMM_IS_COMPOSITOR", "foo", 1);
-  host = host_linux_new (path, 640, 480);
+  host = host_linux_new (path, -1, -1);
   HostLinux *host_linux = (void*)host;
   host_linux = (void*) host;
   unsetenv ("MMM_IS_COMPOSITOR");
