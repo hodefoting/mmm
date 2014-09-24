@@ -204,17 +204,153 @@ mmfb_unichar_to_utf8 (unsigned int  ch,
     return 0;
 }
 
+static int sdl_check_events (Host *host)
+{
+  HostSDL *host_sdl = (void*)host;
+  SDL_Event event;
+  int got_event = 0;
+  char buf[64];
+  while (SDL_PollEvent (&event))
+  {
+    switch (event.type)
+    {
+      case SDL_MOUSEMOTION:
+        {
+          if (host->pointer_down[0])
+            sprintf (buf, "mouse-drag %.0f %.0f",
+                 (float)event.motion.x,
+                 (float)event.motion.y);
+          else
+            sprintf (buf, "mouse-motion %.0f %.0f",
+                 (float)event.motion.x,
+                 (float)event.motion.y);
+
+          if (host->focused)
+            mmm_add_event (host->focused->mmm, buf);
+        }
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        {
+          sprintf (buf, "mouse-press %.0f %.0f",
+               (float)event.button.x,
+               (float)event.button.y);
+          if (host->focused)
+            mmm_add_event (host->focused->mmm, buf);
+          host->pointer_down[0] = 1;
+        }
+        break;
+      case SDL_MOUSEBUTTONUP:
+        {
+          sprintf (buf, "mouse-release %.0f %.0f",
+               (float)event.button.x,
+               (float)event.button.y);
+
+          if (host->focused)
+            mmm_add_event (host->focused->mmm, buf);
+          host->pointer_down[0] = 0;
+        }
+        break;
+      case SDL_KEYDOWN:
+        {
+          char buf[64] = "";
+          char *name = NULL;
+
+          buf[mmfb_unichar_to_utf8 (event.key.keysym.unicode, (void*)buf)]=0;
+          switch (event.key.keysym.sym)
+          {
+            case SDLK_F1:        name = "F1";       break;
+            case SDLK_F2:        name = "F2";       break;
+            case SDLK_F3:        name = "F3";       break;
+            case SDLK_F4:        name = "F4";       break;
+            case SDLK_F5:        name = "F5";       break;
+            case SDLK_F6:        name = "F6";       break;
+            case SDLK_F7:        name = "F7";       break;
+            case SDLK_F8:        name = "F8";       break;
+            case SDLK_F9:        name = "F9";       break;
+            case SDLK_F10:       name = "F10";      break;
+            case SDLK_F11:       name = "F11";      break;
+            case SDLK_F12:       name = "F12";      break;
+            case SDLK_ESCAPE:    name = "escape";   break;
+            case SDLK_DOWN:      name = "down";     break;
+            case SDLK_LEFT:      name = "left";     break;
+            case SDLK_UP:        name = "up";       break;
+            case SDLK_RIGHT:     name = "right";    break;
+            case SDLK_BACKSPACE: name = "backspace";break;
+            case SDLK_TAB:       name = "tab";      break;
+            case SDLK_DELETE:    name = "delete";   break;
+            case SDLK_INSERT:    name = "insert";   break;
+            case SDLK_RETURN:    name = "return";   break;
+            case SDLK_HOME:      name = "home";     break;
+            case SDLK_END:       name = "end";      break;
+            case SDLK_PAGEDOWN:  name = "page-down";break;
+            case SDLK_PAGEUP:    name = "page-up";  break;
+
+            default:
+              if (event.key.keysym.unicode < 32)
+              {
+                buf[0] = event.key.keysym.unicode;
+                buf[1] = 0;
+              }
+              name = (void*)&buf[0];
+          }
+          if (event.key.keysym.mod & (KMOD_CTRL))
+          {
+            char buf2[64] = "";
+            sprintf (buf2, "control-%c", event.key.keysym.sym);
+            name = buf2;
+            if (event.key.keysym.mod & (KMOD_SHIFT))
+            {
+              char buf2[64] = "";
+              sprintf (buf2, "shift-%c", event.key.keysym.sym);
+              name = buf2;
+            }
+          }
+          if (event.key.keysym.mod & (KMOD_ALT))
+          {
+            char buf2[64] = "";
+            sprintf (buf2, "alt-%c", event.key.keysym.sym);
+            name = buf2;
+            if (event.key.keysym.mod & (KMOD_SHIFT))
+            {
+              char buf2[64] = "";
+              sprintf (buf2, "shift-%c", event.key.keysym.sym);
+              name = buf2;
+            }
+          }
+          if (name)
+            if (host->focused)
+              mmm_add_event (host->focused->mmm, name);
+        }
+        break;
+      case SDL_VIDEORESIZE:
+        host_sdl->screen = SDL_SetVideoMode (event.resize.w,
+                                         event.resize.h,32,
+                                         SDL_SWSURFACE | SDL_RESIZABLE);
+        host->width = event.resize.w;
+        host->height = event.resize.h;
+        host->stride = host->width * host->bpp;
+
+        if (host->single_app && host->focused)
+          mmm_host_set_size (host->focused->mmm,
+              host->width, host->height);
+        break;
+    }
+    got_event = 1;
+  }
+  if (!got_event)
+  {
+    usleep (16000);
+  }
+  return got_event;
+}
+
 static int main_sdl (const char *path, int single)
 {
   Host *host;
 
-  setenv ("MMM_IS_COMPOSITOR", "foo", 1);
   host = host_sdl_new (path, 640, 480);
   HostSDL *host_sdl = (void*)host;
   host_sdl = (void*) host;
-  unsetenv ("MMM_IS_COMPOSITOR");
-
-  SDL_Event event;
 
   atexit (SDL_Quit);
 
@@ -222,144 +358,14 @@ static int main_sdl (const char *path, int single)
 
   while (!host_has_quit)
   {
-    int got_event = 0;
-    char buf[64];
-    while (SDL_PollEvent (&event))
-    {
-      switch (event.type)
-      {
-        case SDL_MOUSEMOTION:
-          {
-            if (host->pointer_down[0])
-              sprintf (buf, "mouse-drag %.0f %.0f",
-                   (float)event.motion.x,
-                   (float)event.motion.y);
-            else
-              sprintf (buf, "mouse-motion %.0f %.0f",
-                   (float)event.motion.x,
-                   (float)event.motion.y);
+    int got_event;
 
-            if (host->focused)
-              mmm_add_event (host->focused->mmm, buf);
-          }
-          break;
-        case SDL_MOUSEBUTTONDOWN:
-          {
-            sprintf (buf, "mouse-press %.0f %.0f",
-                 (float)event.button.x,
-                 (float)event.button.y);
-            if (host->focused)
-              mmm_add_event (host->focused->mmm, buf);
-            host->pointer_down[0] = 1;
-          }
-          break;
-        case SDL_MOUSEBUTTONUP:
-          {
-            sprintf (buf, "mouse-release %.0f %.0f",
-                 (float)event.button.x,
-                 (float)event.button.y);
-
-            if (host->focused)
-              mmm_add_event (host->focused->mmm, buf);
-            host->pointer_down[0] = 0;
-          }
-          break;
-        case SDL_KEYDOWN:
-          {
-            char buf[64] = "";
-            char *name = NULL;
-
-            buf[mmfb_unichar_to_utf8 (event.key.keysym.unicode, (void*)buf)]=0;
-            switch (event.key.keysym.sym)
-            {
-              case SDLK_F1:        name = "F1";       break;
-              case SDLK_F2:        name = "F2";       break;
-              case SDLK_F3:        name = "F3";       break;
-              case SDLK_F4:        name = "F4";       break;
-              case SDLK_F5:        name = "F5";       break;
-              case SDLK_F6:        name = "F6";       break;
-              case SDLK_F7:        name = "F7";       break;
-              case SDLK_F8:        name = "F8";       break;
-              case SDLK_F9:        name = "F9";       break;
-              case SDLK_F10:       name = "F10";      break;
-              case SDLK_F11:       name = "F11";      break;
-              case SDLK_F12:       name = "F12";      break;
-              case SDLK_ESCAPE:    name = "escape";   break;
-              case SDLK_DOWN:      name = "down";     break;
-              case SDLK_LEFT:      name = "left";     break;
-              case SDLK_UP:        name = "up";       break;
-              case SDLK_RIGHT:     name = "right";    break;
-              case SDLK_BACKSPACE: name = "backspace";break;
-              case SDLK_TAB:       name = "tab";      break;
-              case SDLK_DELETE:    name = "delete";   break;
-              case SDLK_INSERT:    name = "insert";   break;
-              case SDLK_RETURN:    name = "return";   break;
-              case SDLK_HOME:      name = "home";     break;
-              case SDLK_END:       name = "end";      break;
-              case SDLK_PAGEDOWN:  name = "page-down";break;
-              case SDLK_PAGEUP:    name = "page-up";  break;
-
-              default:
-                if (event.key.keysym.unicode < 32)
-                {
-                  buf[0] = event.key.keysym.unicode;
-                  buf[1] = 0;
-                }
-                name = (void*)&buf[0];
-            }
-            if (event.key.keysym.mod & (KMOD_CTRL))
-            {
-              char buf2[64] = "";
-              sprintf (buf2, "control-%c", event.key.keysym.sym);
-              name = buf2;
-              if (event.key.keysym.mod & (KMOD_SHIFT))
-              {
-                char buf2[64] = "";
-                sprintf (buf2, "shift-%c", event.key.keysym.sym);
-                name = buf2;
-              }
-            }
-            if (event.key.keysym.mod & (KMOD_ALT))
-            {
-              char buf2[64] = "";
-              sprintf (buf2, "alt-%c", event.key.keysym.sym);
-              name = buf2;
-              if (event.key.keysym.mod & (KMOD_SHIFT))
-              {
-                char buf2[64] = "";
-                sprintf (buf2, "shift-%c", event.key.keysym.sym);
-                name = buf2;
-              }
-            }
-            if (name)
-              if (host->focused)
-                mmm_add_event (host->focused->mmm, name);
-          }
-          break;
-        case SDL_VIDEORESIZE:
-          host_sdl->screen = SDL_SetVideoMode (event.resize.w,
-                                           event.resize.h,32,
-                                           SDL_SWSURFACE | SDL_RESIZABLE);
-          host->width = event.resize.w;
-          host->height = event.resize.h;
-          host->stride = host->width * host->bpp;
-
-          if (host->single_app && host->focused)
-            mmm_host_set_size (host->focused->mmm,
-                host->width, host->height);
-          break;
-      }
-      got_event = 1;
-    }
-    if (!got_event)
-    {
-      usleep (10000);
-    }
+    got_event = sdl_check_events (host);
     host_idle_check (host);
     host_monitor_dir (host);
-    host->focused = NULL;
 
-    {
+    if (got_event || host_is_dirty (host)) {
+      host->focused = NULL;
       int x, y;
       SDL_GetMouseState(&x, &y);
 
@@ -368,10 +374,13 @@ static int main_sdl (const char *path, int single)
       {
         render_client (host, l->data, x, y);
       }
+      SDL_UpdateRect(host_sdl->screen, 0,0,0,0);
+      host_clear_dirt (host);
     }
-
-    SDL_UpdateRect(host_sdl->screen, 0,0,0,0);
-    host_clear_dirt (host);
+    else
+    {
+      usleep (5000);
+    }
   }
 
   if (host->single_app)

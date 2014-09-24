@@ -101,7 +101,7 @@ static inline void memcpy32_16 (uint8_t *dst, const uint8_t *src, int count)
 
 void _mmm_get_coords (Mmm *mmm, double *x, double *y);
 
-#if 1
+#if 0
 static uint8_t cursor[16][16]={
 {1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 {1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -193,6 +193,12 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
     }
     mmm_read_done (client->mmm);
   }
+
+
+  /* drawing of the cursor should be separated from the blitting
+   * maybe even copying from the frontbuffer the contents it
+   * is overdrawing; (and undrawing the cursor before each flip)
+   */
 
   { /* draw cursor */
     int u,v;
@@ -365,35 +371,41 @@ static int main_linux (const char *path)
 
   while (!host_has_quit)
   {
-    double px, py;
-    int warp = 0;
-    if (!event_check_pending (host))
-      usleep (10000);
+    int got_event;
 
-    _mmm_get_coords (NULL, &px, &py);
-
-    if (px < 0) { px = 0; warp = 1; }
-    if (py < 0) { py = 0; warp = 1; }
-    if (py > host->height) { py = host->height; warp = 1; }
-    if (px > host->width) { px = host->width; warp = 1; }
-    if (warp)
-    {
-      linux_warp_cursor (host, px, py);
-    }
-
+    got_event = event_check_pending (host);
     host_idle_check (host);
     host_monitor_dir (host);
-    host->focused = NULL;
 
+    if (got_event || host_is_dirty (host))
     {
+      int warp = 0;
+      double px, py;
       MmmList *l;
+      host->focused = NULL;
+
+      _mmm_get_coords (NULL, &px, &py);
+      if (px < 0) { px = 0; warp = 1; }
+      if (py < 0) { py = 0; warp = 1; }
+      if (py > host->height) { py = host->height; warp = 1; }
+      if (px > host->width) { px = host->width; warp = 1; }
+      if (warp)
+      {
+        linux_warp_cursor (host, px, py);
+      }
+
+
       for (l = host->clients; l; l = l->next)
       {
         render_client (host, l->data, px, py);
       }
+      host_clear_dirt (host);
+    }
+    else
+    {
+      usleep (10000);
     }
 
-    host_clear_dirt (host);
   }
   return 0;
 }

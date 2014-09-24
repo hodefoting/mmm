@@ -28,22 +28,30 @@ int host_has_quit = 0;
 
 void host_clear_dirt (Host *host)
 {
-  host->dirty_x0 = 10000;
-  host->dirty_y0 = 10000;
-  host->dirty_x1 = -10000;
-  host->dirty_y1 = -10000;
+  host->dirty_xmin = 10000;
+  host->dirty_ymin = 10000;
+  host->dirty_xmax = -10000;
+  host->dirty_ymax = -10000;
 }
 
-void host_add_dirt (Host *host, int x0, int y0, int x1, int y1)
+void host_add_dirt (Host *host, int xmin, int ymin, int xmax, int ymax)
 {
-  if (x0 < host->dirty_x0)
-    host->dirty_x0 = x0;
-  if (y0 < host->dirty_y0)
-    host->dirty_y0 = y0;
-  if (x1 > host->dirty_x1)
-    host->dirty_x0 = x0;
-  if (y1 > host->dirty_y1)
-    host->dirty_y1 = y1;
+  if (xmin < host->dirty_xmin)
+    host->dirty_xmin = xmin;
+  if (ymin < host->dirty_ymin)
+    host->dirty_ymin = ymin;
+  if (xmax > host->dirty_xmax)
+    host->dirty_xmax = xmax;
+  if (ymax > host->dirty_ymax)
+    host->dirty_ymax = ymax;
+}
+
+int host_is_dirty (Host *host)
+{
+  if (host->dirty_xmax > host->dirty_xmin &&
+      host->dirty_ymax > host->dirty_ymin)
+    return 1;
+  return 0;
 }
 
 void validate_client (Host *host, const char *client_name)
@@ -109,6 +117,9 @@ void validate_client (Host *host, const char *client_name)
       }
     }
     mmm_list_append (&host->clients, client);
+
+  if (host->single_app)
+    host->focused = client;
   }
 }
 
@@ -126,9 +137,16 @@ static int pid_is_alive (long pid)
 void host_queue_draw (Host *host, MmmRectangle *rect)
 {
   if (rect)
+  {
     host_add_dirt (host, rect->x, rect->y, rect->x+rect->width, rect->y+rect->height);
+    //fprintf (stderr, "dmg: %i %i %i %i\n", rect->x, rect->y, rect->x+rect->width, rect->y+rect->height);
+  }
   else
+  {
     host_add_dirt (host, 0, 0, host->width, host->height);
+    //fprintf (stderr, "dmgfull\n");
+  }
+
 }
 
 void host_monitor_dir (Host *host)

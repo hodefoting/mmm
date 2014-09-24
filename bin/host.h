@@ -38,10 +38,10 @@ struct _Host
   MmmList     *clients;
   Client      *focused;
   int          fullscreen;
-  int          dirty_x0;
-  int          dirty_y0;
-  int          dirty_x1;
-  int          dirty_y1;
+  int          dirty_xmin;
+  int          dirty_ymin;
+  int          dirty_xmax;
+  int          dirty_ymax;
   int          width;
   int          bpp;
   int          stride;
@@ -51,12 +51,13 @@ struct _Host
   int          single_app;
 };
 
-void host_clear_dirt (Host *host);
-void host_add_dirt (Host *host, int x0, int y0, int x1, int y1);
-void validate_client (Host *host, const char *client_name);
-void host_queue_draw (Host *host, MmmRectangle *rect);
+void host_clear_dirt  (Host *host);
+void host_add_dirt    (Host *host, int x0, int y0, int x1, int y1);
+void validate_client  (Host *host, const char *client_name);
+void host_queue_draw  (Host *host, MmmRectangle *rect);
 void host_monitor_dir (Host *host);
-int  host_idle_check (void *data);
+int  host_idle_check  (void *data);
+int  host_is_dirty    (Host *host);
 
 extern int host_has_quit;
 
