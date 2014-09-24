@@ -147,8 +147,6 @@ struct Mmm_
   int          mapped_size;
 
   void        *format;   /* babl format */
-                         /* XXX: add format for frontbuffer*/
-
   char        *path;
   int          fd;
 
@@ -222,6 +220,9 @@ mmm_get_buffer_write (Mmm *fb, int *width, int *height, int *stride,
     void *babl_format)
 {
   mmm_wait_neutral (fb);
+
+  // XXX: do a client check size?
+
   //fprintf (stderr, "[%i]", fb->bpp);
 
   mmm_set_state (fb, MMM_DRAWING);
@@ -310,7 +311,7 @@ mmm_get_buffer_read (Mmm *fb, int *width, int *height, int *stride)
 
   mmm_set_state (fb, MMM_FLIPPING);
 
-  return (void*)fb->fb; /* the direct device XXX: should use double buffering for toplevel */
+  return (void*)fb->fb; 
 }
 
 void
@@ -472,7 +473,6 @@ void mmm_add_event (Mmm *fb, const char *event)
   if (shm->events.write >= MMM_MAX_EVENT)
     shm->events.write = 0;
 }
-
 
 const char *mmm_get_event (Mmm *fb)
 {

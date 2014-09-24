@@ -357,17 +357,15 @@ void linux_warp_cursor (Host *host, int x, int y)
     evsource_set_coord (host_linux->evsource[i], x, y);
 }
 
-static int main_linux (const char *path)
+static int main_linux (const char *path, int single)
 {
   Host *host;
 
-  setenv ("MMM_IS_COMPOSITOR", "foo", 1);
   host = host_linux_new (path, -1, -1);
   HostLinux *host_linux = (void*)host;
   host_linux = (void*) host;
-  unsetenv ("MMM_IS_COMPOSITOR");
 
-  //atexit (SDL_Quit);
+  host->single_app = single;
 
   while (!host_has_quit)
   {
@@ -382,7 +380,9 @@ static int main_linux (const char *path)
       int warp = 0;
       double px, py;
       MmmList *l;
-      host->focused = NULL;
+
+      if (!host->single_app)
+        host->focused = NULL;
 
       _mmm_get_coords (NULL, &px, &py);
       if (px < 0) { px = 0; warp = 1; }
@@ -393,7 +393,6 @@ static int main_linux (const char *path)
       {
         linux_warp_cursor (host, px, py);
       }
-
 
       for (l = host->clients; l; l = l->next)
       {
@@ -422,14 +421,14 @@ int main (int argc, char **argv)
       setenv ("MMM_PATH", path, 1);
       mkdir (path, 0777);
     }
-    return main_linux (path);
+    return main_linux (path, 0);
   }
 
   if (argv[1][0] == '-' &&
       argv[1][1] == 'p' &&
       argv[2])
   {
-    return main_linux (argv[2]);
+    return main_linux (argv[2], 1);
   }
 
   if (!getenv ("MMM_PATH"))
@@ -443,7 +442,7 @@ int main (int argc, char **argv)
     switch (fork())
     {
       case 0:
-        return main_linux (path);
+        return main_linux (path, 1);
       case -1:
         fprintf (stderr, "fork failed\n");
         return 0;

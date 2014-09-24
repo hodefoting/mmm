@@ -152,7 +152,7 @@ inline static unsigned char *mmm_pix_pset (
     int red, int green, int blue, int alpha)
 {
   //fprintf (stderr, "%i %i %i %i\n", x, y, mmm_get_width (fb), mmm_get_height (fb));
-  mmm_dither_rgb (x, y, &red, &green , &blue);
+  //mmm_dither_rgb (x, y, &red, &green , &blue);
 
   switch (bpp)
   {

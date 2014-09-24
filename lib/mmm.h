@@ -49,6 +49,10 @@ Mmm*           mmm_new                  (int width, int height,
 /* shut down an mmm.
  */
 void           mmm_destroy              (Mmm *fb);
+
+/* always returns 4 for now, since "R'G'B'A u8" is the only supported pixel
+ * format.
+ */
 int            mmm_get_bytes_per_pixel  (Mmm *fb);
 
 /* mmm_set_size:

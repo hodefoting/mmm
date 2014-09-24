@@ -354,7 +354,7 @@ static int main_sdl (const char *path, int single)
 
   atexit (SDL_Quit);
 
-  host->single_app = 1;
+  host->single_app = single;
 
   while (!host_has_quit)
   {
@@ -365,9 +365,11 @@ static int main_sdl (const char *path, int single)
     host_monitor_dir (host);
 
     if (got_event || host_is_dirty (host)) {
-      host->focused = NULL;
       int x, y;
       SDL_GetMouseState(&x, &y);
+
+      if (!host->single_app)
+        host->focused = NULL;
 
       MmmList *l;
       for (l = host->clients; l; l = l->next)

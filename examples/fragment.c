@@ -138,6 +138,7 @@ void fill_render (Mmm *fb, Fragment fragment, int foo)
   unsigned char *buffer;
   int width, height, stride;
   int bpp;
+  mmm_client_check_size (fb, &width, &height);
 
   buffer = mmm_get_buffer_write (fb, &width, &height, &stride, NULL);
 
@@ -229,7 +230,7 @@ int main ()
   ty = H/2;
     }
 
-    for (i = 96; i < 128; i+=2)
+    for (i = 96; i < 1280; i+=2)
       {
         fill_render (fb, frag_ripple_interference, i);
         event_handling (fb);
