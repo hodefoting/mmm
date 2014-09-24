@@ -46,7 +46,6 @@ static int mmm_evsource_mice_init ()
 //    sleep (1);
     return -1;
   }
-    fprintf (stderr, "!\n");
   write (mrg_mice_this->fd, reset, 1);
   _mrg_evsrc_coord = mrg_mice_this;
   return 0;
