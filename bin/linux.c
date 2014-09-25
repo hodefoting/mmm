@@ -26,8 +26,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <sys/mman.h>
 #include <assert.h>
 #include <stdint.h>
-
+#include <signal.h>
 #include <linux/fb.h>
+#include <linux/vt.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -60,6 +61,10 @@ struct _HostLinux
 
   EvSource    *evsource[4];
   int          evsource_count;
+  
+  int          vt;
+  int          vt_active;
+  int          tty;
 };
 
 EvSource *evsource_ts_new (void);
@@ -73,6 +78,75 @@ static int host_add_evsource (Host *host, EvSource *source)
   {
     host_linux->evsource[host_linux->evsource_count++] = source;
   }
+}
+
+int is_active (Host *host)
+{
+  HostLinux *host_linux = (void*)host;
+  return host_linux->vt_active;
+}
+
+static HostLinux *host_linux = NULL;
+  
+static void vt_switch_cb (int sig)
+{
+  if (sig == SIGUSR1)
+  {
+    ioctl (host_linux->tty, VT_RELDISP, 1);
+    host_linux->vt_active = 0;
+  }
+  else
+  {
+    ioctl (host_linux->tty, VT_RELDISP, VT_ACKACQ);
+    host_linux->vt_active = 1;
+    host_queue_draw ((void*)host_linux, NULL);
+  }
+}
+
+static int configure_vt (void)
+{
+  host_linux->vt_active = 1;
+  {
+    int fd = open ("/dev/tty", O_RDWR, 0);
+    struct vt_stat st;
+    if (fd == -1)
+    {
+      fprintf (stderr, "Failed to open /dev/tty\n");
+      return -1;
+    }
+    if (ioctl (fd, VT_GETSTATE, &st) == -1)
+    {
+      return -1; /* XXX: not on console this bail should chain on to other backends ...*/
+    }
+    host_linux->vt = st.v_active;
+    close (fd);
+  }
+
+  signal (SIGUSR1, vt_switch_cb);
+  signal (SIGUSR2, vt_switch_cb);
+  
+  {
+    struct vt_mode mode;
+    int fd;
+    char path[32];
+    sprintf (path, "/dev/tty%i", host_linux->vt);
+    fd = open (path, O_RDWR, 0);
+    if (fd == -1)
+    {
+      fprintf (stderr, "Failed to open %s\n", path);
+      exit (-1);
+    }
+    
+    mode.mode = VT_PROCESS;
+    mode.relsig = SIGUSR1;
+    mode.acqsig = SIGUSR2;
+    if (ioctl(fd, VT_SETMODE, &mode) < 0)
+    {
+      fprintf (stderr, "VT_SET_MODE on %s failed\n", path);
+      exit (-1);
+    }
+  }
+  return 0;
 }
 
 static int event_check_pending (Host *host)
@@ -377,9 +451,9 @@ static int main_linux (const char *path, int single)
   Host *host;
 
   host = host_linux_new (path, -1, -1);
-  HostLinux *host_linux = (void*)host;
   host_linux = (void*) host;
 
+  configure_vt ();
   host->single_app = single;
 
   while (!host_has_quit)
@@ -390,7 +464,7 @@ static int main_linux (const char *path, int single)
     host_idle_check (host);
     host_monitor_dir (host);
 
-    if (got_event || host_is_dirty (host))
+    if ((got_event || host_is_dirty (host)) && host_linux->vt_active)
     {
       int warp = 0;
       double px, py;
