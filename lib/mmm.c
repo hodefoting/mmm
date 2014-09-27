@@ -47,10 +47,10 @@ typedef struct _MmmShm MmmShm;
 #define MMM_AUDIO_BUFFER_SIZE  4096
 
 typedef struct MmmBlock {
-  uint64_t type;
-  uint32_t length;
-  uint32_t next;
-  uint8_t  data[];
+  uint64_t type;   /* can also be interpreted as 8 chars               */
+  uint32_t length; /* length of block (including this header) in bytes */
+  uint32_t next;   /* offset of start of next block header             */
+  uint8_t  data[]; /* the actual data of the block                     */
 } MmmBlock;
 
 /* In the comments, a C means the client (generally) writes and a H means the
