@@ -291,7 +291,10 @@ mmm_wait_neutral_or_wait_flip (Mmm *fb)
     usleep (500);
 
   if (attempts < 1)
-    fprintf (stderr, "mmm host timed out waiting on client\n");
+  {
+    //fprintf (stderr, "mmm host timed out waiting on client\n");
+    // XXX: an event or something instead?
+  }
 
   return   (attempts > 0 ? 0 : -1 );
 }

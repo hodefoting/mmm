@@ -207,15 +207,13 @@ static inline void memcpy32_8 (uint8_t *dst, const uint8_t *src, int count)
 {
   while (count--)
     {
-      int big = ((src[0] >> 2)) +
-                ((src[1] >> 4)<<2) +
-                ((src[2] >> 2)<<6);
-      dst[0] = big;
+      dst[0] = ((src[0] >> 5)) +
+               ((src[1] >> 5)<<3) +
+               ((src[2] >> 6)<<6);
       dst+=1;
       src+=4;
     }
 }
-
 
 static inline void memcpy32_24 (uint8_t *dst, const uint8_t *src, int count)
 {
@@ -446,12 +444,12 @@ Host *host_linux_new (const char *path, int width, int height)
     unsigned short  red[256],  green[256],  blue[256];
     struct fb_cmap cmap = {0, 256, red, green, blue, NULL};
     int i;
-#if 0
-    if (ioctl (host_linux->fb_fd, FBIOPUTCMAP, &cmap) == -1)
+
+    /* do we really need to restore it ? */
+    if (ioctl (host_linux->fb_fd, FBIOPUTCMAP, &ocmap) == -1)
     {
       fprintf (stderr, "palette initialization problem %i\n", __LINE__);
     }
-#endif
     
     for (i = 0; i < 256; i++)
     {
