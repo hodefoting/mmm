@@ -441,6 +441,30 @@ Host *host_linux_new (const char *path, int width, int height)
       host_linux->vinfo.red.length +
       host_linux->vinfo.green.length +
       host_linux->vinfo.blue.length;
+  else if (host_linux->fb_bits == 8)
+  {
+    unsigned short  red[256],  green[256],  blue[256];
+    struct fb_cmap cmap = {0, 256, red, green, blue, NULL};
+    int i;
+#if 0
+    if (ioctl (host_linux->fb_fd, FBIOPUTCMAP, &cmap) == -1)
+    {
+      fprintf (stderr, "palette initialization problem %i\n", __LINE__);
+    }
+#endif
+    
+    for (i = 0; i < 256; i++)
+    {
+      red[i]   = ((( i >> 5) & 0x7) << 5) << 8;
+      green[i] = ((( i >> 2) & 0x7) << 5) << 8;
+      blue[i]  = ((( i >> 0) & 0x3) << 6) << 8;
+    }
+
+    if (ioctl (host_linux->fb_fd, FBIOPUTCMAP, &cmap) == -1)
+    {
+      fprintf (stderr, "palette initialization problem %i\n", __LINE__);
+    }
+  }
   
   host_linux->fb_bpp = host_linux->vinfo.bits_per_pixel / 8;
 
