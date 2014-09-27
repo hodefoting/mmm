@@ -30,4 +30,4 @@ _uninstall_pkg:
 
 _install_pkg: $(LIB_TARGETS)
 	install -d $(DESTDIR)$(LIBDIR)/pkgconfig
-	install -t $(DESTDIR)$(LIBDIR)/pkgconfig $(PROJECT_NAME).pc
+	install $(PROJECT_NAME).pc $(DESTDIR)$(LIBDIR)/pkgconfig

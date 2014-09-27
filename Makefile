@@ -1,3 +1,4 @@
+CC=gcc
 LIB_PKGMODULES=
 PROJECT_NAME=mmm
 PROJECT_DESCRIPTION=Memory Mapped Machine
@@ -17,7 +18,7 @@ include .mm/lib
 #include .mm/bin
 include .mm/pkgconfig
 
-all: mmm.linux mmm.sdl
+all: mmm.linux mmm.static
 
 clean: clean-bins
 clean-bins:
@@ -30,8 +31,10 @@ mmm.linux: bin/host.c libmmm.a bin/linux*.c
 	$(CC) -Ilib bin/host.c libmmm.a bin/linux*.c -o $@
 
 install: install-bins
-install-bins: mmm.sdl mmm.linux
-	install mmm.sdl $(PREFIX)/bin
+install-bins: mmm.linux
 	install mmm.linux $(PREFIX)/bin
+	install mmm.static $(PREFIX)/bin
 	install mmm $(PREFIX)/bin
 
+mmm.static: bin/*.c libmmm.a lib/*.h
+	$(CC) -Os -static bin/linux*.c libmmm.a -Ilib bin/host*.c -o $@

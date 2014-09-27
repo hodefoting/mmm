@@ -50,15 +50,15 @@ _install_lib: buildapi-install-runtime buildapi-install-devel
 	
 buildapi-install-runtime: $(LIB_TARGETS)
 	install -d $(DESTDIR)$(LIBDIR)
-	install -t $(DESTDIR)$(LIBDIR) $(LIBNAME).$(LIBEXT)
-	install -t $(DESTDIR)$(LIBDIR) $(LIBNAME).a
+	install $(LIBNAME).$(LIBEXT) $(DESTDIR)$(LIBDIR)
+	install $(LIBNAME).a $(DESTDIR)$(LIBDIR)
 	install -d $(DESTDIR)$(LIBDIR)/pkgconfig
 	@ldconfig 2> /dev/null || true
 buildapi-install-devel: $(PROJECT_NAME).pc
 	install -d $(DESTDIR)$(LIBDIR)/pkgconfig
-	install -t $(DESTDIR)$(LIBDIR)/pkgconfig $(PROJECT_NAME).pc
+	install $(PROJECT_NAME).pc $(DESTDIR)$(LIBDIR)/pkgconfig
 	install -d $(DESTDIR)$(PREFIX)/include/$(PROJECT_NAME)
-	install -t $(DESTDIR)$(PREFIX)/include/$(PROJECT_NAME) $(INSTALLED_HEADERS)
+	install $(INSTALLED_HEADERS) $(DESTDIR)$(PREFIX)/include/$(PROJECT_NAME)
 
 
 # ############ examples ################
