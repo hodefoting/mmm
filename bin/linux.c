@@ -50,6 +50,7 @@ struct _HostLinux
   Host         host;
   char        *path;
   int          fb_fd;
+  int          fb_bits;
   int          fb_bpp;
   uint8_t     *front_buffer;
   int          fb_stride;
@@ -188,6 +189,46 @@ static inline void memcpy32_16 (uint8_t *dst, const uint8_t *src, int count)
     }
 }
 
+static inline void memcpy32_15 (uint8_t *dst, const uint8_t *src, int count)
+{
+  while (count--)
+    {
+      int big = ((src[2] >> 3)) +
+                ((src[1] >> 3)<<5) +
+                ((src[0] >> 3)<<10);
+      dst[1] = big >> 8;
+      dst[0] = big & 255;
+      dst+=2;
+      src+=4;
+    }
+}
+
+static inline void memcpy32_8 (uint8_t *dst, const uint8_t *src, int count)
+{
+  while (count--)
+    {
+      int big = ((src[0] >> 2)) +
+                ((src[1] >> 4)<<2) +
+                ((src[2] >> 2)<<6);
+      dst[0] = big;
+      dst+=1;
+      src+=4;
+    }
+}
+
+
+static inline void memcpy32_24 (uint8_t *dst, const uint8_t *src, int count)
+{
+  while (count--)
+    {
+      dst[0] = src[0];
+      dst[1] = src[1];
+      dst[2] = src[2];
+      dst+=3;
+      src+=4;
+    }
+}
+
 void _mmm_get_coords (Mmm *mmm, double *x, double *y);
 
 #if 0
@@ -272,10 +313,24 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       if (dst >= (uint8_t*)host_linux->front_buffer &&
           dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
       {
-        if (host->bpp == 4)
-          memcpy (dst, src, copystride);
-        else
-          memcpy32_16 (dst, src, copystride / host->bpp);
+        switch (host_linux->fb_bits)
+        {
+          case 32:
+            memcpy (dst, src, copystride);
+            break;
+          case 24:
+            memcpy32_24 (dst, src, copystride / host->bpp);
+            break;
+          case 16:
+            memcpy32_16 (dst, src, copystride / host->bpp);
+            break;
+          case 15:
+            memcpy32_15 (dst, src, copystride / host->bpp);
+            break;
+          case 8:
+            memcpy32_8 (dst, src, copystride / host->bpp);
+            break;
+        }
       }
       dst += host_linux->fb_stride;
       src += rowstride;
@@ -297,26 +352,20 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
         {
           if (u + ptr_x > 0 && u + ptr_x < host->width)
           {
-            int o = host_linux->fb_stride * ((int)ptr_y+v) + host->bpp * ((int)(ptr_x)+u);
+            int o = host_linux->fb_stride * ((int)ptr_y+v) + host_linux->fb_bpp * ((int)(ptr_x)+u);
             if (cursor[v][u] == 1)
             {
-              host_linux->front_buffer[o+0] = 255;
-              host_linux->front_buffer[o+1] = 255;
-              if (host->bpp == 4)
-              {
-                host_linux->front_buffer[o+2] = 255;
-                host_linux->front_buffer[o+3] = 255;
-              }
+              int i;
+              for (i = 0; i < host_linux->fb_bpp; i++)
+                host_linux->front_buffer[o+i] = 255;
             }
             else if (cursor[v][u] == 2)
             {
-              host_linux->front_buffer[o+0] = 0;
-              host_linux->front_buffer[o+1] = 0;
-              if (host->bpp == 4)
-              {
-                host_linux->front_buffer[o+2] = 0;
+              int i;
+              for (i = 0; i < host_linux->fb_bpp; i++)
+                host_linux->front_buffer[o+i] = 0;
+              if (host_linux->fb_bpp == 4)
                 host_linux->front_buffer[o+3] = 255;
-              }
             }
           }
         }
@@ -384,7 +433,9 @@ Host *host_linux_new (const char *path, int width, int height)
        return NULL;
      }
 
-  host_linux->fb_bpp = host_linux->vinfo.bits_per_pixel / 8;
+  host_linux->fb_bits = host_linux->vinfo.bits_per_pixel;
+  fprintf (stderr, "fb bits: %i\n", host_linux->fb_bits);
+  host_linux->fb_bpp = (host_linux->vinfo.bits_per_pixel + 1) / 8;
   host_linux->fb_stride = host_linux->finfo.line_length;
   host_linux->fb_mapped_size = host_linux->finfo.smem_len;
   host_linux->front_buffer = mmap (NULL, host_linux->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, host_linux->fb_fd, 0);
