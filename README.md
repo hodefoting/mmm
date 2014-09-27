@@ -64,9 +64,9 @@ mmm client.
 
 ### Linux framebuffer
 
-Directly interacts with _/dev/input/mice_ and _/dev/fb0_ or _/dev/graphics/fb0_,
-provides a tiny binary size and code that works for 32bit and 16bit
-framebuffers.
+Directly interacts with standard input, _/dev/input/mice_ and _/dev/fb0_ or
+_/dev/graphics/fb0_, a tiny self-contained binary which works with 16,24 and
+32 bit framebuffers.
 
 ### SDL 1.2
 

@@ -435,7 +435,15 @@ Host *host_linux_new (const char *path, int width, int height)
 
   host_linux->fb_bits = host_linux->vinfo.bits_per_pixel;
   fprintf (stderr, "fb bits: %i\n", host_linux->fb_bits);
-  host_linux->fb_bpp = (host_linux->vinfo.bits_per_pixel + 1) / 8;
+  
+  if (host_linux->fb_bits == 16)
+    host_linux->fb_bits =
+      host_linux->vinfo.red.length +
+      host_linux->vinfo.green.length +
+      host_linux->vinfo.blue.length;
+  
+  host_linux->fb_bpp = host_linux->vinfo.bits_per_pixel / 8;
+
   host_linux->fb_stride = host_linux->finfo.line_length;
   host_linux->fb_mapped_size = host_linux->finfo.smem_len;
   host_linux->front_buffer = mmap (NULL, host_linux->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, host_linux->fb_fd, 0);
