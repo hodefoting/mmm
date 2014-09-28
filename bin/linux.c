@@ -60,6 +60,11 @@ struct _HostLinux
   struct       fb_var_screeninfo vinfo;
   struct       fb_fix_screeninfo finfo;
 
+  int          clip_x0;
+  int          clip_x1;
+  int          clip_y0;
+  int          clip_y1;
+
   EvSource    *evsource[4];
   int          evsource_count;
   
@@ -270,7 +275,6 @@ static uint8_t cursor[16][16]={
 
 #endif
 
-
 static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 {
   HostLinux *host_linux = (void*)host;
@@ -375,9 +379,16 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
  * is overdrawing; (and undrawing the cursor before each flip)
  */
 
+static uint8_t cursor_backup[16*16*4];
+static int     cursor_backup_x = 0;
+static int     cursor_backup_y = 0;
+
 void draw_cursor (Host *host, int ptr_x, int ptr_y)
 { /* draw cursor */
   int u,v;
+  cursor_backup_x = ptr_x;
+  cursor_backup_y = ptr_y;
+
   for (v = 0; v < 16; v ++)
     if (v + ptr_y > 0 && v + ptr_y < host->height)
       for (u = 0; u < 16; u ++)
@@ -385,20 +396,42 @@ void draw_cursor (Host *host, int ptr_x, int ptr_y)
         if (u + ptr_x > 0 && u + ptr_x < host->width)
         {
           int o = host_linux->fb_stride * ((int)ptr_y+v) + host_linux->fb_bpp * ((int)(ptr_x)+u);
+          int i;
+          for (i = 0; i < host_linux->fb_bpp; i++)
+            cursor_backup[(v * 16 + u)*4 + i] = host_linux->front_buffer[o + i];
+
           if (cursor[v][u] == 1)
           {
-            int i;
             for (i = 0; i < host_linux->fb_bpp; i++)
               host_linux->front_buffer[o+i] = 255;
           }
           else if (cursor[v][u] == 2)
           {
-            int i;
             for (i = 0; i < host_linux->fb_bpp; i++)
               host_linux->front_buffer[o+i] = 0;
             if (host_linux->fb_bpp == 4)
               host_linux->front_buffer[o+3] = 255;
           }
+        }
+      }
+}
+
+void undraw_cursor (Host *host)
+{
+  int u,v;
+  int ptr_x = cursor_backup_x;
+  int ptr_y = cursor_backup_y;
+
+  for (v = 0; v < 16; v ++)
+    if (v + ptr_y > 0 && v + ptr_y < host->height)
+      for (u = 0; u < 16; u ++)
+      {
+        if (u + ptr_x > 0 && u + ptr_x < host->width)
+        {
+          int o = host_linux->fb_stride * ((int)ptr_y+v) + host_linux->fb_bpp * ((int)(ptr_x)+u);
+          int i;
+          for (i = 0; i < host_linux->fb_bpp; i++)
+              host_linux->front_buffer[o + i] = cursor_backup[(v * 16 + u)*4 + i];
         }
       }
 }
@@ -470,6 +503,7 @@ Host *host_linux_new (const char *path, int width, int height)
       host_linux->vinfo.red.length +
       host_linux->vinfo.green.length +
       host_linux->vinfo.blue.length;
+
   else if (host_linux->fb_bits == 8)
   {
     unsigned short red[256],  green[256],  blue[256];
@@ -580,7 +614,7 @@ static int main_linux (const char *path, int single)
     host_idle_check (host);
     host_monitor_dir (host);
 
-    if ((got_event || host_is_dirty (host)) && host_linux->vt_active)
+    if (got_event || (host_is_dirty (host)) && host_linux->vt_active)
     {
       int warp = 0;
       double px, py;
@@ -590,6 +624,7 @@ static int main_linux (const char *path, int single)
         host->focused = NULL;
 
       _mmm_get_coords (NULL, &px, &py);
+
       if (px < 0) { px = 0; warp = 1; }
       if (py < 0) { py = 0; warp = 1; }
       if (py > host->height) { py = host->height; warp = 1; }
@@ -599,18 +634,30 @@ static int main_linux (const char *path, int single)
         linux_warp_cursor (host, px, py);
       }
 
-      for (l = host->clients; l; l = l->next)
+      if (host_is_dirty (host))
       {
-        render_client (host, l->data, px, py);
+        host_linux->clip_x0 = 0;
+        host_linux->clip_y0 = 0;
+        host_linux->clip_x1 = host->width;
+        host_linux->clip_y1 = host->height;
+
+        for (l = host->clients; l; l = l->next)
+        {
+          render_client (host, l->data, px, py);
+        }
+        host_clear_dirt (host);
+        draw_cursor (host, px, py);
       }
-      draw_cursor (host, px, py);
-      host_clear_dirt (host);
+      else
+      {
+        undraw_cursor (host);
+        draw_cursor (host, px, py);
+      }
     }
     else
     {
       usleep (10000);
     }
-
   }
 
   return 0;
