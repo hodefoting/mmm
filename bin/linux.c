@@ -306,32 +306,65 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
     {
       copystride = width * host->bpp;
     }
-    for (scan = 0; scan < height; scan ++)
-    {
-      if (dst >= (uint8_t*)host_linux->front_buffer &&
-          dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
-      {
-        switch (host_linux->fb_bits)
-        {
-          case 32:
+
+
+    switch (host_linux->fb_bits)
+     {
+       case 32:
+          for (scan = 0; scan < height; scan ++)
+          {
+            if (dst >= (uint8_t*)host_linux->front_buffer &&
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
             memcpy (dst, src, copystride);
-            break;
-          case 24:
-            memcpy32_24 (dst, src, copystride / host->bpp);
-            break;
-          case 16:
-            memcpy32_16 (dst, src, copystride / host->bpp);
-            break;
-          case 15:
-            memcpy32_15 (dst, src, copystride / host->bpp);
-            break;
-          case 8:
-            memcpy32_8 (dst, src, copystride / host->bpp);
-            break;
-        }
+            dst += host_linux->fb_stride;
+            src += rowstride;
+          }
+          break;
+       case 24:
+          copystride /= host->bpp;
+          for (scan = 0; scan < height; scan ++)
+          {
+            if (dst >= (uint8_t*)host_linux->front_buffer &&
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
+            memcpy32_24 (dst, src, copystride);
+            dst += host_linux->fb_stride;
+            src += rowstride;
+          }
+          break;
+       case 16:
+          copystride /= host->bpp;
+          for (scan = 0; scan < height; scan ++)
+          {
+            if (dst >= (uint8_t*)host_linux->front_buffer &&
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
+            memcpy32_16 (dst, src, copystride);
+            dst += host_linux->fb_stride;
+            src += rowstride;
+          }
+          break;
+       case 15:
+          copystride /= host->bpp;
+          for (scan = 0; scan < height; scan ++)
+          {
+            if (dst >= (uint8_t*)host_linux->front_buffer &&
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
+            memcpy32_15 (dst, src, copystride);
+            dst += host_linux->fb_stride;
+            src += rowstride;
+          }
+          break;
+       case 8:
+          copystride /= host->bpp;
+          for (scan = 0; scan < height; scan ++)
+          {
+            if (dst >= (uint8_t*)host_linux->front_buffer &&
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
+            memcpy32_8 (dst, src, copystride);
+            dst += host_linux->fb_stride;
+            src += rowstride;
+          }
+          break;
       }
-      dst += host_linux->fb_stride;
-      src += rowstride;
     }
     mmm_read_done (client->mmm);
   }
