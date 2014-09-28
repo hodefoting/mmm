@@ -367,42 +367,40 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       }
     }
     mmm_read_done (client->mmm);
-  }
+    mmm_host_get_size (client->mmm, &cwidth, &cheight);
+}
 
+/* drawing of the cursor should be separated from the blitting
+ * maybe even copying from the frontbuffer the contents it
+ * is overdrawing; (and undrawing the cursor before each flip)
+ */
 
-  /* drawing of the cursor should be separated from the blitting
-   * maybe even copying from the frontbuffer the contents it
-   * is overdrawing; (and undrawing the cursor before each flip)
-   */
-
-  { /* draw cursor */
-    int u,v;
-    for (v = 0; v < 16; v ++)
-      if (v + ptr_y > 0 && v + ptr_y < host->height)
-        for (u = 0; u < 16; u ++)
+void draw_cursor (Host *host, int ptr_x, int ptr_y)
+{ /* draw cursor */
+  int u,v;
+  for (v = 0; v < 16; v ++)
+    if (v + ptr_y > 0 && v + ptr_y < host->height)
+      for (u = 0; u < 16; u ++)
+      {
+        if (u + ptr_x > 0 && u + ptr_x < host->width)
         {
-          if (u + ptr_x > 0 && u + ptr_x < host->width)
+          int o = host_linux->fb_stride * ((int)ptr_y+v) + host_linux->fb_bpp * ((int)(ptr_x)+u);
+          if (cursor[v][u] == 1)
           {
-            int o = host_linux->fb_stride * ((int)ptr_y+v) + host_linux->fb_bpp * ((int)(ptr_x)+u);
-            if (cursor[v][u] == 1)
-            {
-              int i;
-              for (i = 0; i < host_linux->fb_bpp; i++)
-                host_linux->front_buffer[o+i] = 255;
-            }
-            else if (cursor[v][u] == 2)
-            {
-              int i;
-              for (i = 0; i < host_linux->fb_bpp; i++)
-                host_linux->front_buffer[o+i] = 0;
-              if (host_linux->fb_bpp == 4)
-                host_linux->front_buffer[o+3] = 255;
-            }
+            int i;
+            for (i = 0; i < host_linux->fb_bpp; i++)
+              host_linux->front_buffer[o+i] = 255;
+          }
+          else if (cursor[v][u] == 2)
+          {
+            int i;
+            for (i = 0; i < host_linux->fb_bpp; i++)
+              host_linux->front_buffer[o+i] = 0;
+            if (host_linux->fb_bpp == 4)
+              host_linux->front_buffer[o+3] = 255;
           }
         }
-  }
-
-  mmm_host_get_size (client->mmm, &cwidth, &cheight);
+      }
 }
 
 Host *host_linux_new (const char *path, int width, int height)
@@ -605,6 +603,7 @@ static int main_linux (const char *path, int single)
       {
         render_client (host, l->data, px, py);
       }
+      draw_cursor (host, px, py);
       host_clear_dirt (host);
     }
     else
@@ -613,6 +612,7 @@ static int main_linux (const char *path, int single)
     }
 
   }
+
   return 0;
 }
 
