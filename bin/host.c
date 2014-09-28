@@ -213,8 +213,8 @@ int host_idle_check (void *data)
     {
       if (width)
       {
-        MmmRectangle rect = {x + mmm_get_x (client->mmm), mmm_get_y (client->mmm), width, height};
-        //fprintf (stderr, "%i %i %i %i",  x, y, width, height);
+        MmmRectangle rect = {mmm_get_x (client->mmm)+x, mmm_get_y (client->mmm) + y,
+                             width, height};
         host_queue_draw (host, &rect);
       }
       else
@@ -222,6 +222,7 @@ int host_idle_check (void *data)
         MmmRectangle rect = {mmm_get_x (client->mmm), mmm_get_y (client->mmm),
                              mmm_get_width (client->mmm), mmm_get_height        (client->mmm)};
         host_queue_draw (host, &rect);
+        fprintf (stderr, "probably dead code\n");
       }
     }
 

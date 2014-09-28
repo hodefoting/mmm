@@ -60,10 +60,6 @@ struct _HostLinux
   struct       fb_var_screeninfo vinfo;
   struct       fb_fix_screeninfo finfo;
 
-  int          clip_x0;
-  int          clip_x1;
-  int          clip_y0;
-  int          clip_y1;
 
   EvSource    *evsource[4];
   int          evsource_count;
@@ -280,18 +276,20 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
   HostLinux *host_linux = (void*)host;
   //SDL_Surface *screen = host_linux->screen;
   int width, height, rowstride;
+  const unsigned char *pixels;
 
   if (client->pid == getpid ())
     return;
 
   int cwidth, cheight;
+  int x = mmm_get_x (client->mmm);
+  int y = mmm_get_y (client->mmm);
 
-  const unsigned char *pixels = mmm_get_buffer_read (client->mmm,
-      &width, &height, &rowstride);
-  int x, y;
+  if (y > host->dirty_ymax ||
+      x > host->dirty_xmax)
+    return;
 
-  x = mmm_get_x (client->mmm);
-  y = mmm_get_y (client->mmm);
+  pixels = mmm_get_buffer_read (client->mmm, &width, &height, &rowstride);
 
   if (ptr_x >= x && ptr_x < x + width &&
       ptr_y >= y && ptr_y < y + height)
@@ -304,66 +302,98 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
     int front_offset = y * host->stride + x * host->bpp;
     uint8_t *dst = host_linux->front_buffer + front_offset;
     const uint8_t *src = pixels;
-    int copystride = host->stride - x * host->bpp;
+    int copy_count;
+
+    int start_scan;
+    int end_scan;
     int scan;
-    if (copystride > width * host->bpp)
+
+    start_scan = y;
+    end_scan = y + height;
+
+    if (end_scan < host->dirty_ymin ||
+        x + width < host->dirty_xmin)
     {
-      copystride = width * host->bpp;
+      mmm_read_done (client->mmm);
+      return;
     }
 
+    if (start_scan < host->dirty_ymin)
+      start_scan = host->dirty_ymin;
+    if (end_scan > host->dirty_ymax)
+      end_scan = host->dirty_ymax;
+    start_scan -= y;
+    end_scan -= y;
+    
+    copy_count = host->width - x;
+    if (copy_count > width)
+    {
+      copy_count = width;
+    }
+
+    if (host->dirty_xmin > x)
+    {
+      dst += host_linux->fb_bpp * (host->dirty_xmin - x);
+      src += host->bpp * (host->dirty_xmin - x);
+      copy_count -= (host->dirty_xmin - x);
+    }
+
+    if (host->dirty_xmin + copy_count > host->dirty_xmax)
+    {
+      copy_count = (host->dirty_xmax - host->dirty_xmin);
+    }
+
+    dst += (host_linux->fb_stride) * start_scan;
+    src += (rowstride) * start_scan;
 
     switch (host_linux->fb_bits)
      {
        case 32:
-          for (scan = 0; scan < height; scan ++)
+          for (scan = start_scan; scan < end_scan; scan ++)
           {
             if (dst >= (uint8_t*)host_linux->front_buffer &&
-                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
-            memcpy (dst, src, copystride);
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copy_count * 4)
+            memcpy (dst, src, copy_count * 4);
             dst += host_linux->fb_stride;
             src += rowstride;
           }
           break;
        case 24:
-          copystride /= host->bpp;
-          for (scan = 0; scan < height; scan ++)
+          for (scan = start_scan; scan < end_scan; scan ++)
           {
             if (dst >= (uint8_t*)host_linux->front_buffer &&
-                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
-            memcpy32_24 (dst, src, copystride);
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copy_count)
+            memcpy32_24 (dst, src, copy_count);
             dst += host_linux->fb_stride;
             src += rowstride;
           }
           break;
        case 16:
-          copystride /= host->bpp;
-          for (scan = 0; scan < height; scan ++)
+          for (scan = start_scan; scan < end_scan; scan ++)
           {
             if (dst >= (uint8_t*)host_linux->front_buffer &&
-                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
-            memcpy32_16 (dst, src, copystride);
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copy_count)
+            memcpy32_16 (dst, src, copy_count);
             dst += host_linux->fb_stride;
             src += rowstride;
           }
           break;
        case 15:
-          copystride /= host->bpp;
-          for (scan = 0; scan < height; scan ++)
+          for (scan = start_scan; scan < end_scan; scan ++)
           {
             if (dst >= (uint8_t*)host_linux->front_buffer &&
-                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
-            memcpy32_15 (dst, src, copystride);
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copy_count)
+            memcpy32_15 (dst, src, copy_count);
             dst += host_linux->fb_stride;
             src += rowstride;
           }
           break;
        case 8:
-          copystride /= host->bpp;
-          for (scan = 0; scan < height; scan ++)
+          for (scan = start_scan; scan < end_scan; scan ++)
           {
             if (dst >= (uint8_t*)host_linux->front_buffer &&
-                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copystride)
-            memcpy32_8 (dst, src, copystride);
+                dst < ((uint8_t*)host_linux->front_buffer) + (host_linux->fb_stride * host->height) - copy_count)
+            memcpy32_8 (dst, src, copy_count);
             dst += host_linux->fb_stride;
             src += rowstride;
           }
@@ -371,7 +401,7 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       }
     }
     mmm_read_done (client->mmm);
-    mmm_host_get_size (client->mmm, &cwidth, &cheight);
+  mmm_host_get_size (client->mmm, &cwidth, &cheight);
 }
 
 /* drawing of the cursor should be separated from the blitting
@@ -636,11 +666,7 @@ static int main_linux (const char *path, int single)
 
       if (host_is_dirty (host))
       {
-        host_linux->clip_x0 = 0;
-        host_linux->clip_y0 = 0;
-        host_linux->clip_x1 = host->width;
-        host_linux->clip_y1 = host->height;
-
+        undraw_cursor (host);
         for (l = host->clients; l; l = l->next)
         {
           render_client (host, l->data, px, py);

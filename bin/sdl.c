@@ -71,21 +71,58 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
     int front_offset = y * host->stride + x * host->bpp;
     uint8_t *dst = screen->pixels + front_offset;
     const uint8_t *src = pixels;
-    int copystride = host->stride - x * host->bpp;
+    int copy_count;
+
+    int start_scan;
+    int end_scan;
     int scan;
-    if (copystride > width * host->bpp)
+
+    start_scan = y;
+    end_scan = y + height;
+
+    if (end_scan < host->dirty_ymin ||
+        x + width < host->dirty_xmin)
     {
-      copystride = width * host->bpp;
+      mmm_read_done (client->mmm);
+      return;
     }
-    for (scan = 0; scan < height; scan ++)
+
+    if (start_scan < host->dirty_ymin)
+      start_scan = host->dirty_ymin;
+    if (end_scan > host->dirty_ymax)
+      end_scan = host->dirty_ymax;
+    start_scan -= y;
+    end_scan -= y;
+    
+    copy_count = host->width - x;
+    if (copy_count > width)
+    {
+      copy_count = width;
+    }
+
+    if (host->dirty_xmin > x)
+    {
+      dst += 4 * (host->dirty_xmin - x);
+      src += host->bpp * (host->dirty_xmin - x);
+      copy_count -= (host->dirty_xmin - x);
+    }
+
+    if (host->dirty_xmin + copy_count > host->dirty_xmax)
+    {
+      copy_count = (host->dirty_xmax - host->dirty_xmin);
+    }
+
+    dst += (host->stride) * start_scan;
+    src += (rowstride) * start_scan;
+
+    for (scan = start_scan; scan < end_scan; scan ++)
     {
       if (dst >= (uint8_t*)screen->pixels &&
-          dst < ((uint8_t*)screen->pixels) + (host->stride * host->height) - copystride)
-        memcpy (dst, src, copystride);
+          dst < ((uint8_t*)screen->pixels) + (host->stride * host->height) - copy_count * 4)
+        memcpy (dst, src, copy_count * 4);
       dst += host->stride;
       src += rowstride;
     }
-
     mmm_read_done (client->mmm);
   }
 

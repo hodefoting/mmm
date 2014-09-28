@@ -42,6 +42,12 @@ struct _Host
   int          dirty_ymin;
   int          dirty_xmax;
   int          dirty_ymax;
+
+  int          clip_xmin;
+  int          clip_xmax;
+  int          clip_ymin;
+  int          clip_ymax;
+
   int          width;
   int          bpp;
   int          stride;
