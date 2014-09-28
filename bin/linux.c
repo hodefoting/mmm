@@ -441,12 +441,16 @@ Host *host_linux_new (const char *path, int width, int height)
       host_linux->vinfo.blue.length;
   else if (host_linux->fb_bits == 8)
   {
-    unsigned short  red[256],  green[256],  blue[256];
+    unsigned short red[256],  green[256],  blue[256];
+    unsigned short original_red[256];
+    unsigned short original_green[256];
+    unsigned short original_blue[256];
     struct fb_cmap cmap = {0, 256, red, green, blue, NULL};
+    struct fb_cmap original_cmap = {0, 256, original_red, original_green, original_blue, NULL};
     int i;
 
     /* do we really need to restore it ? */
-    if (ioctl (host_linux->fb_fd, FBIOPUTCMAP, &ocmap) == -1)
+    if (ioctl (host_linux->fb_fd, FBIOPUTCMAP, &original_cmap) == -1)
     {
       fprintf (stderr, "palette initialization problem %i\n", __LINE__);
     }
