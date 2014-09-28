@@ -362,13 +362,10 @@ static int sdl_check_events (Host *host)
 static int main_sdl (const char *path, int single)
 {
   Host *host;
-
-  host = host_sdl_new (path, 640, 480);
+  host     = host_sdl_new (path, 640, 480);
   HostSDL *host_sdl = (void*)host;
   host_sdl = (void*) host;
-
   atexit (SDL_Quit);
-
   host->single_app = single;
 
   while (!host_has_quit)
@@ -379,7 +376,7 @@ static int main_sdl (const char *path, int single)
     host_idle_check (host);
     host_monitor_dir (host);
 
-    if (got_event || host_is_dirty (host)) {
+    if (host_is_dirty (host)) {
       int x, y;
       SDL_GetMouseState(&x, &y);
 

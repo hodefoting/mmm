@@ -384,7 +384,7 @@ static int     cursor_backup_x = 0;
 static int     cursor_backup_y = 0;
 
 void draw_cursor (Host *host, int ptr_x, int ptr_y)
-{ /* draw cursor */
+{ 
   int u,v;
   cursor_backup_x = ptr_x;
   cursor_backup_y = ptr_y;
