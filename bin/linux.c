@@ -507,6 +507,10 @@ Host *host_linux_new (const char *path, int width, int height)
     }
   }
 
+  printf ("\033[9;0]"); // turn of terminal screensaver
+  //printf("\033[?17;0;0c"); // hide _terminal_ cursor
+  fflush (NULL);
+
   if (ioctl(host_linux->fb_fd, FBIOGET_FSCREENINFO, &host_linux->finfo))
     {
       fprintf (stderr, "error getting fbinfo\n");
