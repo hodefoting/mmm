@@ -430,6 +430,16 @@ static int main_sdl (const char *path, int single)
     }
     else
     {
+      if (host->single_app && host->focused)
+      {
+        static char *title = NULL;
+        if (!title || strcmp (title, mmm_get_title (host->focused->mmm)))
+        {
+          if (title) free (title);
+          title = strdup (mmm_get_title (host->focused->mmm));
+          SDL_WM_SetCaption (title, "mmm");
+        }
+      }
       usleep (5000);
     }
   }
