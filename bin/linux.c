@@ -28,6 +28,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <stdint.h>
 #include <signal.h>
 #include <linux/fb.h>
+#include <linux/kd.h>
 #include <linux/vt.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
@@ -96,18 +97,32 @@ static void vt_switch_cb (int sig)
   {
     ioctl (host_linux->tty, VT_RELDISP, 1);
     host_linux->vt_active = 0;
+    ioctl(host_linux->tty, KDSETMODE, KD_TEXT);
   }
   else
   {
     ioctl (host_linux->tty, VT_RELDISP, VT_ACKACQ);
     host_linux->vt_active = 1;
     host_queue_draw ((void*)host_linux, NULL);
+    ioctl(host_linux->tty, KDSETMODE, KD_GRAPHICS);
   }
 }
 
 static int configure_vt (void)
 {
+  {
+    int fd;
+    if ((fd = open ("/sys/class/graphics/fbcon/cursor_blink", O_RDWR, 0)) != -1)
+    {
+      write (fd, "0", 1);
+      close (fd);
+    }
+  }
+
+
   host_linux->vt_active = 1;
+
+
   {
     int fd = open ("/dev/tty", O_RDWR, 0);
     struct vt_stat st;
@@ -120,6 +135,7 @@ static int configure_vt (void)
     {
       return -1; /* XXX: not on console this bail should chain on to other backends ...*/
     }
+    ioctl(fd, KDSETMODE, KD_GRAPHICS);
     host_linux->vt = st.v_active;
     close (fd);
   }
@@ -689,6 +705,7 @@ static int main_linux (const char *path, int single)
       usleep (10000);
     }
   }
+  ioctl(host_linux->tty, KDSETMODE, KD_TEXT);
 
   return 0;
 }

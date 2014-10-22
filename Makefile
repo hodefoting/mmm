@@ -5,7 +5,7 @@ PROJECT_DESCRIPTION=Memory Mapped Machine
 SYMBOL_PREFIX=
 CFLAGS=-Wall -Wextra -O0
 
-LIB_LD_FLAGS=-lutil -lm
+LIB_LD_FLAGS=-lutil -lm -lpthread
 
 LIB_CFILES=$(wildcard lib/*.c)
 
@@ -28,17 +28,17 @@ mmm.sdl: bin/sdl*.c bin/host.c libmmm.a
 	$(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl*.c libmmm.a -o $@
 
 mmm.linux: bin/host.c libmmm.a bin/linux*.c
-	$(CC) -Ilib bin/host.c libmmm.a bin/linux*.c -o $@
+	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/linux*.c -o $@
 
 install: install-bins
 install-bins: mmm.linux
-	install -d $(PREFIX)/bin
-	install mmm.linux $(PREFIX)/bin
-	install mmm.static $(PREFIX)/bin
-	install mmm $(PREFIX)/bin
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install mmm.linux $(DESTDIR)$(PREFIX)/bin
+	install mmm.static $(DESTDIR)$(PREFIX)/bin
+	install mmm $(DESTDIR)$(PREFIX)/bin
 
 mmm.static: bin/*.c libmmm.a lib/*.h
-	$(CC) -Os -static bin/linux*.c libmmm.a -Ilib bin/host*.c -o $@
+	$(CC) -Os -static bin/linux*.c -lpthread libmmm.a -Ilib bin/host*.c -o $@
 	strip $@
 
 dist:
@@ -50,4 +50,5 @@ dist:
 		 --exclude='*.o' \
 		 --exclude='*.a' \
 		 --exclude='*.so' \
-	mmm; ls -sl mmm.tar.gz)
+	mmm; ls -sl mmm.tar.gz ; \
+	cp mmm.tar.gz /tar)
