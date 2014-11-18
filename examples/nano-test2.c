@@ -1,5 +1,5 @@
 /* this is to serve as a minimal - no dependencies application
- * integrating with the oc display server.
+ * integrating with an mmm display server.
  */
 #include "mmm.h"
 #include "mmm-pset.h"

@@ -270,11 +270,36 @@ mmm_write_done (Mmm *fb, int x, int y, int width, int height)
   }
   else
   {
-    /* XXX: should combine with existing damage */
-    fb->shm->fb.damage_x = x;
-    fb->shm->fb.damage_y = y;
-    fb->shm->fb.damage_width = width;
-    fb->shm->fb.damage_height = height;
+    if (fb->shm->fb.damage_width)
+    {
+      int x0, x1, y0, y1;
+
+      x0 = fb->shm->fb.damage_x;
+      y0 = fb->shm->fb.damage_y;
+      x1 = fb->shm->fb.damage_x + fb->shm->fb.damage_width;
+      y1 = fb->shm->fb.damage_y + fb->shm->fb.damage_height;
+
+      if (x < x0)
+        x0 = x;
+      if (y < y0)
+        y0 = y;
+      if (x + width > x1)
+        x1 = x + width;
+      if (y + height > y1)
+        y1 = y + height;
+
+      fb->shm->fb.damage_x = x0;
+      fb->shm->fb.damage_y = y0;
+      fb->shm->fb.damage_width = x1 - x0;
+      fb->shm->fb.damage_height = y1 - y0;
+    }
+    else
+    {
+      fb->shm->fb.damage_x = x;
+      fb->shm->fb.damage_y = y;
+      fb->shm->fb.damage_width = width;
+      fb->shm->fb.damage_height = height;
+    }
   }
 
   fb->shm->fb.flip_state = MMM_WAIT_FLIP;
