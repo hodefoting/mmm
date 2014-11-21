@@ -132,8 +132,7 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
   if ( (cwidth  && cwidth  != host->width) ||
        (cheight && cheight != host->height))
   {
-    host_sdl->screen = SDL_SetVideoMode (cwidth,
-                                         cheight,32,
+    host_sdl->screen = SDL_SetVideoMode (cwidth, cheight, 32,
                                          SDL_SWSURFACE | SDL_RESIZABLE);
     host->width = cwidth;
     host->height = cheight;

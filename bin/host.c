@@ -171,7 +171,6 @@ again:
       free (client);
       mmm_list_remove (&host->clients, client);
 
-
       host_queue_draw (host, NULL);
       goto again;
     }
