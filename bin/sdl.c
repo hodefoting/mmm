@@ -149,7 +149,7 @@ static void mmfb_sdl_fullscreen (Host *host, int fullscreen)
 {
   HostSDL *host_sdl = (void*)host;
   SDL_Surface *screen = host_sdl->screen;
-  int width = 640, height = 480;
+  int width = 1024, height = 768;
 
   if (fullscreen)
   {
@@ -193,8 +193,8 @@ Host *host_sdl_new (const char *path, int width, int height)
 
   if (width < 0)
   {
-    width = 640;
-    height = 480;
+    width = 1024;
+    height = 768;
     host->fullscreen = 1;
   }
 
@@ -398,7 +398,7 @@ static int sdl_check_events (Host *host)
 static int main_sdl (const char *path, int single)
 {
   Host *host;
-  host     = host_sdl_new (path, 640, 480);
+  host     = host_sdl_new (path, 1024, 768);
   HostSDL *host_sdl = (void*)host;
   host_sdl = (void*) host;
   atexit (SDL_Quit);
