@@ -18,7 +18,7 @@ include .mm/lib
 #include .mm/bin
 include .mm/pkgconfig
 
-all: mmm.linux mmm.static
+all: mmm.linux mmm.static mmm.sdl
 
 clean: clean-bins
 clean-bins:
@@ -31,10 +31,11 @@ mmm.linux: bin/host.c libmmm.a bin/linux*.c
 	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/linux*.c -o $@
 
 install: install-bins
-install-bins: mmm.linux
+install-bins: mmm.linux mmm.sdl
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install mmm.linux $(DESTDIR)$(PREFIX)/bin
 	install mmm.static $(DESTDIR)$(PREFIX)/bin
+	install mmm.sdl $(DESTDIR)$(PREFIX)/bin
 	install mmm $(DESTDIR)$(PREFIX)/bin
 
 mmm.static: bin/*.c libmmm.a lib/*.h
