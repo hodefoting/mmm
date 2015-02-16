@@ -327,6 +327,7 @@ static int sdl_check_events (Host *host)
             case SDLK_UP:        name = "up";       break;
             case SDLK_RIGHT:     name = "right";    break;
             case SDLK_BACKSPACE: name = "backspace";break;
+            case SDLK_SPACE:     name = "space";    break;
             case SDLK_TAB:       name = "tab";      break;
             case SDLK_DELETE:    name = "delete";   break;
             case SDLK_INSERT:    name = "insert";   break;

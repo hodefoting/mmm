@@ -202,7 +202,7 @@ static const UfbKeyCode ufb_keycodes[]={
   {"tab",       "↹",  {9, '\0'}},
   {"shift-tab", "shift+↹",  "\e[Z"},
   {"backspace", "⌫",  {127, '\0'}},
-  {" ",         "␣",   " "},
+  {"space",     "␣",   " "},
   {"\e",        "␛",  "\e"},
   {"return",    "⏎",  {10,0}},
   {"return",    "⏎",  {13,0}},
