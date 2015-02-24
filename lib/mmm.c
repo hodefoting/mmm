@@ -81,8 +81,8 @@ typedef struct MmmFb {
 
  int32_t    flip_state;      /* CH used for synchronising flips  */
 
- double     x;               /* CH it isn't certain that the server  */
- double     y;               /* CH abides by these coordinates       */
+ double     x;               /* CH it isn't certain that the host */
+ double     y;               /* CH abides by these coordinates    */
  int32_t    desired_width;   /* HC used for initiating resizes   0 from client mean non-resizable */
  int32_t    desired_height;  /* HC shm makes this be correct   */
 
@@ -90,7 +90,9 @@ typedef struct MmmFb {
  int32_t    damage_y;        /* CH */
  int32_t    damage_width;    /* CH */
  int32_t    damage_height;   /* CH */
- uint32_t   pad[32];
+
+ double     z;               /*  H used for persisting stacking order */
+ uint32_t   pad[30];
 } MmmFb;
 
 /* XXX: all of event/message/pcm can share more code and logic if using
@@ -726,6 +728,11 @@ void mmm_set_y (Mmm *fb, int y)
   fb->shm->fb.y = y;
 }
 
+void mmm_set_z (Mmm *fb, int z)
+{
+  fb->shm->fb.z = z;
+}
+
 int  mmm_get_x (Mmm *fb)
 {
   return fb->shm->fb.x;
@@ -734,6 +741,11 @@ int  mmm_get_x (Mmm *fb)
 int mmm_get_y (Mmm *fb)
 {
   return fb->shm->fb.y;
+}
+
+int mmm_get_z (Mmm *fb)
+{
+  return fb->shm->fb.z;
 }
 
 long mmm_client_pid (Mmm *fb)

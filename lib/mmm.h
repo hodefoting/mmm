@@ -76,8 +76,10 @@ const char *   mmm_get_title            (Mmm *fb);
  */
 void           mmm_set_x                (Mmm *fb, int x);
 void           mmm_set_y                (Mmm *fb, int y);
+void           mmm_set_z                (Mmm *fb, int z);
 int            mmm_get_x                (Mmm *fb);
 int            mmm_get_y                (Mmm *fb);
+int            mmm_get_z                (Mmm *fb);
 
 /* query the dimensions of an mmm, note that these values should not
  * be used as basis for stride/direct pixel updates, use the _get_buffer
