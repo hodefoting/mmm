@@ -158,6 +158,12 @@ void           mmm_read_done        (Mmm *fb);
 /* open up a buffer - as held by a client */
 Mmm           *mmm_host_open        (const char *path);
 
+/* reopen an existing buffer by path */
+Mmm * mmm_client_reopen (const char *path);
+
+/* return the on disk path of the buffer */
+const char    *mmm_get_path (Mmm *fb);
+
 /* check if the dimensions have changed */
 int            mmm_host_check_size  (Mmm *fb, int *width, int *height);
 

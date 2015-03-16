@@ -352,12 +352,12 @@ mmm_read_done (Mmm *fb)
   fb->shm->fb.flip_state = MMM_NEUTRAL;
 }
 
+
 Mmm *
-mmm_host_open (const char *path)
+mmm_client_reopen (const char *path)
 {
   Mmm *fb = calloc (sizeof (Mmm), 1);
 
-  fb->compositor_side = 1;
   fb->fd = open (path, O_RDWR);
   if (fb->fd == -1)
     {
@@ -373,9 +373,19 @@ mmm_host_open (const char *path)
   fb->height = fb->shm->fb.height;
   fb->stride = fb->shm->fb.width * fb->bpp;
 
-  mmm_remap (fb);
+  mmm_remap (fb); 
+  fb->path = strdup (path);
   return fb;
 }
+
+Mmm *
+mmm_host_open (const char *path)
+{
+  Mmm *fb = mmm_client_reopen (path);
+  fb->compositor_side = 1;
+  return fb;
+}
+
 static void mmm_init_header (MmmShm *shm);
 
 static void
@@ -1034,3 +1044,8 @@ const char *mmm_get_message (Mmm *fb)
   return NULL;
 }
 
+/* return the on disk path of the buffer */
+const char    *mmm_get_path (Mmm *fb)
+{
+  return fb->path;
+}
