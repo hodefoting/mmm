@@ -430,6 +430,8 @@ static int main_sdl (const char *path, int single)
     }
     else
     {
+      if (host->single_app && !host->focused)
+        host->focused = host->clients?host->clients->data:NULL;
       if (host->single_app && host->focused)
       {
         static char *title = NULL;
