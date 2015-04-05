@@ -109,11 +109,7 @@ void validate_client (Host *host, const char *client_name)
         {
           mmm_set_x (client->mmm, 0);
           mmm_set_y (client->mmm, 0);
-          //mmm_set_x (client->mmm, (host->width - width) / 2);
-          //mmm_set_y (client->mmm, (host->height - height) / 2);
         }
-
-        //pos += 12;
       }
     }
     mmm_list_append (&host->clients, client);
@@ -223,11 +219,6 @@ int host_idle_check (void *data)
         host_queue_draw (host, &rect);
         fprintf (stderr, "probably dead code\n");
       }
-    }
-
-    while (mmm_has_message (client->mmm))
-    {
-      fprintf (stderr, "message: %p: %s\n", client->mmm, mmm_get_message (client->mmm));
     }
   }
   return 1;

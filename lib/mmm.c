@@ -70,7 +70,7 @@ typedef struct MmmHeader {
 
 typedef struct MmmFb {
  MmmBlock   block;
- uint8_t    title[256];      /* C  window title  */ /* XXX: need generic properties?  */
+ uint8_t    title[256];      /* C  window title, outside values - since it is so generic  */
  uint8_t   *babl_format[128];/* C  pixel format; according to babls conventions */
  int32_t    width;           /* C  width of raster in pixels */
  int32_t    height;          /* C  height of raster in pixels */
@@ -95,7 +95,7 @@ typedef struct MmmFb {
 } MmmFb;
 
 /* XXX: all of event/message/pcm can share more code and logic if using
- * variable length event strings (still 0 terminated).
+ * variable length event strings (keeping 0 terminated strings if doing so).
  */
 
 typedef struct MmmEvents {
@@ -113,6 +113,17 @@ typedef struct MmmMessages {
   uint32_t       pad[8];
   uint8_t        buffer[MMM_MAX_EVENT][128]; /* C circular list of events    */
 } MmmMessages;
+
+#define MMM_MAX_VALUES             16
+#define MMM_MAX_VALUE_LENGTH       64
+#define MMM_MAX_VALUE_NAME_LENGTH  16
+
+typedef struct MmmValues {
+  MmmBlock       block;
+  char           name[MMM_MAX_VALUES][MMM_MAX_VALUE_NAME_LENGTH];
+  char           value[MMM_MAX_VALUES][MMM_MAX_VALUE_LENGTH];
+  int            count;
+} MmmValues;
 
 typedef struct MmmPcm {
   MmmBlock       block;
@@ -133,6 +144,7 @@ struct  _MmmShm {
   MmmPcm         pcm;       /* must be fifth  in file */
 
   /* ... potential new blocks  ... */
+  MmmValues      values;    /*   */
 
   MmmBlock       pixeldata; /* offset for pixeldata is defined in fb */
 };
@@ -168,6 +180,7 @@ static char *MMM_events   = "EVENTS  ";
 static char *MMM_messages = "MESSAGES";
 static char *MMM_pcm      = "PCM     ";
 static char *MMM_fbdata   = "FBDATA  ";
+static char *MMM_values   = "VALUES  ";
 
 static void mmm_remap (Mmm *fb);
 
@@ -631,6 +644,13 @@ static void mmm_init_header (MmmShm *shm)
   assert (strlen (MMM_pcm) == 8);
   memcpy (&shm->pcm.block.type, MMM_pcm, 8);
 
+  length = sizeof (MmmValues);
+  shm->values.block.length = length;
+  pos += length;
+  shm->values.block.next = pos;
+  assert (strlen (MMM_values) == 8);
+  memcpy (&shm->values.block.type, MMM_values, 8);
+
   assert (strlen (MMM_fbdata) == 8);
   memcpy (&shm->pixeldata.type, MMM_fbdata, 8);
 }
@@ -708,12 +728,14 @@ const char *mmm_get_babl_format (Mmm *fb)
 void
 mmm_set_title (Mmm *mmm, const char *title)
 {
+  //mmm_set_value (mmm, "title", title);
   strncpy ((void*)mmm->shm->fb.title, title, 512);
 }
 
 const char *
 mmm_get_title (Mmm *mmm)
 {
+  //return mmm_get_value (mmm, "title");
   return (void*)mmm->shm->fb.title;
 }
 
@@ -1059,4 +1081,43 @@ const char *mmm_get_message (Mmm *fb)
 const char    *mmm_get_path (Mmm *fb)
 {
   return fb->path;
+}
+
+void mmm_set_value (Mmm *fb, const char *name, const char *value)
+{
+  int i;
+  if (!strcmp (name, "title"))
+  {
+    mmm_set_title (fb, value);
+    return;
+  }
+  for (i = 0; i < fb->shm->values.count; i ++)
+  {
+    if (!strcmp (fb->shm->values.name[i], name))
+    {
+      strcpy (&fb->shm->values.value[i][0], value);
+      return;
+    }
+  }
+  if (fb->shm->values.count + 2 >= MMM_MAX_VALUES)
+  {
+    fprintf (stderr, "too many mmm values\n");
+    return;
+  }
+  strcpy (&fb->shm->values.name[fb->shm->values.count][0], name);
+  strcpy (&fb->shm->values.value[fb->shm->values.count][0], value);
+  fb->shm->values.count++;
+}
+
+const char *mmm_get_value (Mmm *fb, const char *key)
+{
+  int i;
+  if (!strcmp (key, "title"))
+    return mmm_get_title (fb);
+  for (i = 0; i < fb->shm->values.count; i ++)
+  {
+    if (!strcmp (fb->shm->values.name[i], key))
+      return &fb->shm->values.value[i][0];
+  }
+  return NULL;
 }

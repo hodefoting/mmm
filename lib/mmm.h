@@ -72,6 +72,11 @@ void           mmm_get_size             (Mmm *fb, int *width, int *height);
 void           mmm_set_title            (Mmm *fb, const char *title);
 const char *   mmm_get_title            (Mmm *fb);
 
+/* these with a key of "title" should replace the title
+ */
+void           mmm_set_value            (Mmm *fb, const char *key, const char *value);
+const char *   mmm_get_value            (Mmm *fb, const char *key);
+
 /* modify the windows position in compositor/window-manager coordinates
  */
 void           mmm_set_x                (Mmm *fb, int x);

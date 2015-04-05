@@ -121,7 +121,7 @@ static char *mice_get_event ()
 
   {
     char *r = malloc (64);
-    sprintf (r, "%s %.0f %.0f", ret, mrg_mice_this->x, mrg_mice_this->y);
+    sprintf (r, "%s %.0f %.0f %i", ret, mrg_mice_this->x, mrg_mice_this->y, mrg_mice_this->fd);
     return r;
   }
 
