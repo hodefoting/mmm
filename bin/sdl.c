@@ -38,6 +38,8 @@ struct _HostSDL
   SDL_Surface *screen;
 };
 
+static int baseflags = SDL_SWSURFACE;
+
 static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 {
   HostSDL *host_sdl = (void*)host;
@@ -123,20 +125,37 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       dst += host->stride;
       src += rowstride;
     }
+
+    /* XXX: pass a copy to video-encoder thread, or directly encode */
+
     mmm_read_done (client->mmm);
   }
 
   mmm_host_get_size (client->mmm, &cwidth, &cheight);
 
   if (host->single_app)
-  if ( (cwidth  && cwidth  != host->width) ||
-       (cheight && cheight != host->height))
   {
-    host_sdl->screen = SDL_SetVideoMode (cwidth, cheight, 32,
-                                         SDL_SWSURFACE | SDL_RESIZABLE);
-    host->width = cwidth;
-    host->height = cheight;
-    host->stride = host->width * host->bpp;
+    static int old_baseflags = 0;
+
+    if (mmm_get_value (client->mmm, "borderless"))
+      baseflags |= SDL_NOFRAME;
+    else
+    {
+      if (baseflags & SDL_NOFRAME)
+        baseflags -= SDL_NOFRAME;
+    }
+    
+    if ( (cwidth  && cwidth  != host->width) ||
+         (cheight && cheight != host->height) ||
+         (old_baseflags != baseflags))
+    {
+      host->width = cwidth;
+      host->height = cheight;
+      host->stride = host->width * host->bpp;
+      host_sdl->screen = SDL_SetVideoMode (host->width, host->height, 32,
+                                           baseflags | SDL_RESIZABLE);
+      old_baseflags = baseflags;
+    }
   }
 }
 
@@ -164,13 +183,13 @@ static void mmfb_sdl_fullscreen (Host *host, int fullscreen)
     height = modes[0]->h;
 
     screen = SDL_SetVideoMode(width, height, 32,
-                              SDL_SWSURFACE | SDL_FULLSCREEN );
+                              baseflags | SDL_FULLSCREEN );
     host_sdl->screen = screen;
   }
   else
   {
     screen = SDL_SetVideoMode(width, height, 32,
-                              SDL_SWSURFACE | SDL_RESIZABLE );
+                              baseflags | SDL_RESIZABLE );
     host_sdl->screen = screen;
   }
   host->width = width;
@@ -203,7 +222,7 @@ Host *host_sdl_new (const char *path, int width, int height)
   host->stride = host->width * host->bpp;
   host->height = height;
 
-  host_sdl->screen =  SDL_SetVideoMode (host->width, host->height, 32, SDL_SWSURFACE | SDL_RESIZABLE);
+  host_sdl->screen =  SDL_SetVideoMode (host->width, host->height, 32, baseflags | SDL_RESIZABLE);
 
   if (host->fullscreen)
     mmfb_sdl_fullscreen (host, 1);
@@ -377,7 +396,7 @@ static int sdl_check_events (Host *host)
       case SDL_VIDEORESIZE:
         host_sdl->screen = SDL_SetVideoMode (event.resize.w,
                                          event.resize.h,32,
-                                         SDL_SWSURFACE | SDL_RESIZABLE);
+                                         baseflags | SDL_RESIZABLE);
         host->width = event.resize.w;
         host->height = event.resize.h;
         host->stride = host->width * host->bpp;
