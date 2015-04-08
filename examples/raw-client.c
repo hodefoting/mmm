@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -18,14 +19,15 @@
 #define BPP                4
 
 #define UFB_PID             0x18
+#define UFB_TITLE           0xb0
 #define UFB_WIDTH           0x3b0
 #define UFB_HEIGHT          0x3b4
 #define UFB_STRIDE          0x3b8
 #define UFB_FB_OFFSET       0x3bc
 #define UFB_FLIP_STATE      0x3c0
-//#define UFB_SIZE            131124  // too low and it will conflict with pcm-data
+//#define UFB_SIZE          131124  // too low and it will conflict with pcm-data
 
-#define UFB_SIZE 0x41548
+#define UFB_SIZE 0x4ffff
 #define UFB_FLIP_INIT       0
 #define UFB_FLIP_NEUTRAL    1
 #define UFB_FLIP_DRAWING    2
@@ -51,6 +53,8 @@ static uint8_t *pico_fb (int width, int height)
   fsync (fd);
   chmod (path, 511);
   ram_base = mmap (NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  memset (ram_base, 0, size);
+  strcpy ((void*)ram_base + UFB_TITLE, "foo");
 
   POKE (UFB_FLIP_STATE,  UFB_FLIP_INIT);
   POKE (UFB_PID,         (int)getpid());

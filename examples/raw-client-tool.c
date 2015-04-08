@@ -12,6 +12,7 @@ int main ()
   fprintf (stderr, "%s: %p\n", #a, (void*)((uint8_t*)& (test.a) - (uint8_t*)&test));
   
   GET_ADDR(header.pid)
+  GET_ADDR(fb.title)
   GET_ADDR(fb.width)
   GET_ADDR(fb.height)
   GET_ADDR(fb.stride)

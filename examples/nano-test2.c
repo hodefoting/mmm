@@ -3,7 +3,6 @@
  */
 #include "mmm.h"
 #include "mmm-pset.h"
-//#include "pset.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -140,6 +139,8 @@ void fill_render (Mmm *fb, Fragment fragment, int foo)
   unsigned char *buffer;
   int width, height, stride;
   int bpp;
+
+  mmm_client_check_size (fb, &width, &height);
 
   buffer = mmm_get_buffer_write (fb, &width, &height, &stride, NULL);
 

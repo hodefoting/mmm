@@ -120,9 +120,9 @@ typedef struct MmmMessages {
 
 typedef struct MmmValues {
   MmmBlock       block;
-  char           name[MMM_MAX_VALUES][MMM_MAX_VALUE_NAME_LENGTH];
-  char           value[MMM_MAX_VALUES][MMM_MAX_VALUE_LENGTH];
-  int            count;
+  char           name[MMM_MAX_VALUES][MMM_MAX_VALUE_NAME_LENGTH];  /* C */
+  char           value[MMM_MAX_VALUES][MMM_MAX_VALUE_LENGTH];      /* C */
+  int            count;                                            /* C */
 } MmmValues;
 
 typedef struct MmmPcm {

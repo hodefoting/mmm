@@ -1,5 +1,5 @@
 CC=gcc
-LIB_PKGMODULES=
+LIB_PKGMODULES=libinput
 PROJECT_NAME=mmm
 PROJECT_DESCRIPTION=Memory Mapped Machine
 SYMBOL_PREFIX=
@@ -11,7 +11,7 @@ LIB_CFILES=$(wildcard lib/*.c)
 
 #BIN_CFILES=$(wildcard bin/*.c)
 
-INSTALLED_HEADERS=lib/mmm.h
+INSTALLED_HEADERS=lib/mmm.h lib/mmm-pset.h
 
 include .mm/magic
 include .mm/lib
@@ -28,8 +28,8 @@ clean-bins:
 mmm.sdl: bin/sdl*.c bin/host.c libmmm.a
 	$(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl*.c libmmm.a -o $@
 
-mmm.linux: bin/host.c libmmm.a bin/linux*.c
-	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/linux*.c -o $@
+mmm.linux: bin/host.c libmmm.a bin/linux*.c bin/libinput*.c
+	$(CC) -Ilib `pkg-config libinput --libs --cflags` -lpthread bin/host.c libmmm.a bin/linux*.c bin/libinput*.c -o $@
 
 install: install-bins
 install-bins: mmm.linux mmm.sdl
