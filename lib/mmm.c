@@ -598,6 +598,10 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
   mmm_pcm_set_sample_rate (fb, 44100);
   mmm_pcm_set_format (fb, MMM_s16);
 
+  usleep (10000); /* XXX: really ugly, launching gifplayer with -1, -1 dims
+                          is enough to cause a race with SDL under X
+                   */
+
   return fb;
 }
 

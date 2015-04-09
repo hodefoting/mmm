@@ -23,6 +23,9 @@
 #include "mmm.h"
 #include "mmm-pset.h"
 
+static int loop = 1;
+static int do_quit = 0;
+
 unsigned char *load_file(const char *path, size_t *data_size);
 void warning(const char *context, int code);
 void *bitmap_create(int width, int height);
@@ -139,7 +142,7 @@ int decode_gif_anim (Mmm *fb, char *path)
 
 	/* decode the frames */
   int l;
-  for (l = 0; l < 100; l++)
+  for (l = 0; l < loop; l++)
 	for (i = 0; i != gif.frame_count; i++) {
 		unsigned int row, col;
 		unsigned char *image;
@@ -196,20 +199,85 @@ int decode_gif_anim (Mmm *fb, char *path)
     }
 		}
 
+
+    while(!do_quit)
+    {
+        usleep(100000);
+        unsigned int row, col;
+        unsigned char *image;
+        unsigned char *buffer;
+        unsigned char *dst;
+        int width; int height; int stride;
+
+        mmm_client_check_size (fb, &width, &height);
+        buffer = mmm_get_buffer_write (fb, &width, &height, &stride, NULL);
+
+        image = (unsigned char *) gif.frame_image;
+
+        int x, y;
+        int ox, oy;
+        int k = 0;
+
+        float scale = 1.0 * gif.width / width;
+
+        if (1.0 * gif.height /height > scale)
+          scale = 1.0 * gif.height / height;
+
+        ox = (width - (gif.width/scale))/2;
+        oy = (height - (gif.height/scale))/2;
+
+        for (y = 0; y < height-1; y++)
+        {
+          dst = buffer + stride * y;
+          for (x = 0; x < width-1; x++, k++)
+            {
+              col = (x-ox) * scale;
+              row = (y-oy) * scale;
+
+              if (col < 0 || row < 0 || col > gif.width || row > gif.height)
+                mmm_pset (fb, buffer, x, y, 255,255,255, 255);
+              else
+              {
+                size_t z = (row * gif.width + col) * 4;
+                dst[2] = image[z];
+                dst[1] = image[z+1];
+                dst[0] = image[z+2];
+                dst[3] = 255;
+              }
+              dst+=4;
+            }
+          mmm_write_done (fb, 0, 0, -1, -1);
+        }
+    }
+
     gif_finalise(&gif);
 	  free(data);
-
+    mmm_destroy (fb);
 	return 0;
 }
 
 int main(int argc, char *argv[])
 {
-  Mmm *fb = mmm_new (512, 384, 0, NULL);;
+  Mmm *fb = mmm_new (-1, -1, 0, NULL);
+  int i;
 
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s image.gif\n", argv[0]);
+	if (argc < 2) {
+		fprintf(stderr, "Usage: %s image.gif [--loop=N] [--quit]\n", argv[0]);
 		return 1;
 	}
+
+  for (i = 2; i < argc; i++)
+  {
+    if (!strcmp (argv[i], "--quit"))
+    {
+      do_quit = 1;
+    }
+    else if (!strncmp (argv[i], "--loop=", 7))
+    {
+      loop = atoi (argv[i] + 7);
+    }
+  }
+
   return decode_gif_anim (fb, argv[1]);
 }
 
