@@ -258,8 +258,9 @@ int decode_gif_anim (Mmm *fb, char *path)
 
 int main(int argc, char *argv[])
 {
-  Mmm *fb = mmm_new (-1, -1, 0, NULL);
+  Mmm *fb = mmm_new (512, 384, 0, NULL);
   int i;
+  usleep (1000);
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s image.gif [--loop=N] [--quit]\n", argv[0]);
