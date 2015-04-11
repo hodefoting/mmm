@@ -1,5 +1,4 @@
 CC=gcc
-LIB_PKGMODULES=libinput
 PROJECT_NAME=mmm
 PROJECT_DESCRIPTION=Memory Mapped Machine
 SYMBOL_PREFIX=
@@ -28,8 +27,8 @@ clean-bins:
 mmm.sdl: bin/sdl*.c bin/host.c libmmm.a
 	$(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl*.c libmmm.a -o $@
 
-mmm.linux: bin/host.c libmmm.a bin/linux*.c bin/libinput*.c
-	$(CC) -Ilib `pkg-config libinput --libs --cflags` -lpthread bin/host.c libmmm.a bin/linux*.c bin/libinput*.c -o $@
+mmm.linux: bin/host.c libmmm.a bin/linux*.c 
+	$(CC) -Ilib `pkg-config --libs --cflags` -lpthread bin/host.c libmmm.a bin/linux*.c -o $@
 
 install: install-bins
 install-bins: mmm.linux mmm.sdl
