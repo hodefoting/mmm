@@ -25,7 +25,7 @@ clean-bins:
 	rm -f mmm.sdl mmm.linux mmm.static
 
 mmm.sdl: bin/sdl*.c bin/host.c libmmm.a
-	$(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl*.c libmmm.a -o $@
+	pkg-config sdl && $(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl*.c libmmm.a -o $@ || true
 
 mmm.linux: bin/host.c libmmm.a bin/linux*.c 
 	$(CC) -Ilib `pkg-config --libs --cflags` -lpthread bin/host.c libmmm.a bin/linux*.c -o $@
@@ -36,7 +36,7 @@ install-bins: mmm.linux mmm.sdl
 	install mmm $(DESTDIR)$(PREFIX)/bin
 	install mmm.linux $(DESTDIR)$(PREFIX)/bin
 	#install mmm.static $(DESTDIR)$(PREFIX)/bin
-	install mmm.sdl $(DESTDIR)$(PREFIX)/bin
+	[ -f mmm.sdl ] && install mmm.sdl $(DESTDIR)$(PREFIX)/bin || true
 
 mmm.static: bin/*.c libmmm.a lib/*.h
 	$(CC) -Os -static bin/linux*.c -lc -lpthread_nonshared libmmm.a -Ilib bin/host*.c -o $@
