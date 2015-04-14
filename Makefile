@@ -28,7 +28,7 @@ mmm.sdl: bin/sdl*.c bin/host.c libmmm.a
 	pkg-config sdl && $(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl*.c libmmm.a -o $@ || true
 
 mmm.linux: bin/host.c libmmm.a bin/linux*.c 
-	$(CC) -Ilib `pkg-config --libs --cflags` -lpthread bin/host.c libmmm.a bin/linux*.c -o $@
+	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/linux*.c -o $@
 
 install: install-bins
 install-bins: mmm.linux mmm.sdl
