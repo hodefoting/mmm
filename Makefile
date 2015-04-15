@@ -2,7 +2,7 @@ CC=gcc
 PROJECT_NAME=mmm
 PROJECT_DESCRIPTION=Memory Mapped Machine
 SYMBOL_PREFIX=
-CFLAGS=-Wall -Wextra -O0
+CFLAGS +=-Wall -Wextra
 
 LIB_LD_FLAGS=-lutil -lm -lpthread
 
