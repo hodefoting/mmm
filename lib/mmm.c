@@ -18,7 +18,7 @@
 #include "mmm.h"
 
 #define MMM_WAIT_ATTEMPTS 150   /* each attempts is 1ms */
-#define USE_ATOMIC_OPS    1
+//#define USE_ATOMIC_OPS    0
 
 #include <fcntl.h>
 #include <unistd.h>
