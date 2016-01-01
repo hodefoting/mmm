@@ -928,7 +928,7 @@ int mmm_pcm_write (Mmm *fb, const int8_t *data, int frames)
   __sync_lock_test_and_set(&fb->shm->pcm.write,
                      (fb->shm->pcm.write + seg1_len) % total);
 #else
-  fb->shm->pcm.write = (fb->shm->pcm.queued_pos + seg1_len) % total;
+  fb->shm->pcm.write = (fb->shm->pcm.write + seg1_len) % total;
 #endif
 
   if (frames <= 0)
@@ -950,7 +950,7 @@ int mmm_pcm_write (Mmm *fb, const int8_t *data, int frames)
   __sync_lock_test_and_set(&fb->shm->pcm.write,
                      (fb->shm->pcm.write + seg1_len) % total);
 #else
-  fb->shm->pcm.write = (fb->shm->pcm.queued_pos + seg1_len) % total;
+  fb->shm->pcm.write = (fb->shm->pcm.write + seg1_len) % total;
 #endif
 
   if (frames > 0)
