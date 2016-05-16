@@ -17,7 +17,7 @@ include .mm/lib
 #include .mm/bin
 include .mm/pkgconfig
 
-all: mmm.linux mmm.sdl 
+all: mmm.linux mmm.sdl mmm.kobo
 
 
 clean: clean-bins
@@ -29,6 +29,9 @@ mmm.sdl: bin/sdl*.c bin/host.c libmmm.a
 
 mmm.linux: bin/host.c libmmm.a bin/linux*.c 
 	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/linux*.c -o $@
+
+mmm.kobo: bin/host.c libmmm.a bin/kobo*.c  bin/linux-*.c
+	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/kobo*.c bin/linux-*.c -o $@
 
 install: install-bins
 install-bins: mmm.linux mmm.sdl

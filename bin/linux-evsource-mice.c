@@ -58,8 +58,8 @@ static int mmm_evsource_mice_init ()
   mrg_mice_this->fd = open ("/dev/input/mice", O_RDONLY | O_NONBLOCK);
   if (mrg_mice_this->fd == -1)
   {
-    fprintf (stderr, "error opening mice device\n");
-//    sleep (1);
+    fprintf (stderr, "error opening /dev/input/mice device, maybe add to input group if such group exist, or otherwise make the rights be satisfied.\n");
+//  sleep (1);
     return -1;
   }
   write (mrg_mice_this->fd, reset, 1);

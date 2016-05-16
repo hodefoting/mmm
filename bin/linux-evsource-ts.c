@@ -209,6 +209,7 @@ static int get_fd (EvSource *ev_source)
 static void set_coord (EvSource *ev_source, double x, double y)
 {
   fprintf (stderr, "can't really warp on a touch screen..\n");
+  /* synthesising a move event might do part of it though - for a reset */
 }
 
 static EvSource src = {

@@ -1,6 +1,8 @@
 #ifndef EVSOURCE_H
 #define EVSOURCE_H
 
+#include <unistd.h>
+
 typedef struct _EvSource EvSource;
 
 /* this is the raw interface emitting somewhat raw events, to
