@@ -506,19 +506,8 @@ Host *host_linux_new (const char *path, int width, int height)
     exit (-1);
   }
 
-  if (width < 0)
-  {
-    width = 640;
-    height = 480;
-    host->fullscreen = 1;
-  }
-
-  host->width = width;
-  host->bpp = 4;
-  host->stride = host->width * host->bpp;
-  host->height = height;
-
   host_linux->fb_fd = open ("/dev/fb0", O_RDWR);
+
   if (host_linux->fb_fd > 0)
     host_linux->path = strdup ("/dev/fb0");
   else
@@ -531,6 +520,7 @@ Host *host_linux_new (const char *path, int width, int height)
     else
     {
       free (host_linux);
+      fprintf (stderr, "failed to open /dev/fb0\n");
       return NULL;
     }
   }
@@ -556,6 +546,20 @@ Host *host_linux_new (const char *path, int width, int height)
        free (host_linux);
        return NULL;
      }
+  host_width = host_linux->vinfo.xres;
+  host_height = host_linux->vinfo.yres;
+
+  if (width < 0)
+  {
+    width = host_width;
+    height = host_height;
+    host->fullscreen = 1;
+  }
+
+  host->width = width;
+  host->bpp = 4;
+  host->stride = host->width * host->bpp;
+  host->height = height;
 
   host_linux->fb_bits = host_linux->vinfo.bits_per_pixel;
   fprintf (stderr, "fb bits: %i\n", host_linux->fb_bits);
