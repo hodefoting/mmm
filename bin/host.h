@@ -66,5 +66,7 @@ int  host_idle_check  (void *data);
 int  host_is_dirty    (Host *host);
 
 extern int host_has_quit;
+extern int host_width;
+extern int host_height;
 
 #endif

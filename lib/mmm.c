@@ -482,6 +482,8 @@ mmm_client_check_size (Mmm *fb, int *width, int *height)
   return ret;
 }
 
+
+// XXX: maybe inserting the hack that tramslates -1, -1 to fullscreen / default size in mmm_set_size
 void mmm_set_size (Mmm *fb, int width, int height)
 {
   while ((fb->shm->fb.flip_state != MMM_NEUTRAL) &&
@@ -544,6 +546,8 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
 {
   Mmm *fb = NULL;
   char *path = NULL;
+
+  fprintf (stderr, "%i %s %ix%i\n", getpid(), __FUNCTION__, width, height);
   
   path = getenv ("MMM_PATH");
 
@@ -566,7 +570,16 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
         fprintf (stderr, "fork failed\n");
         return 0;
     }
+
+    /* do stats in a loop with a delay, until the file exists? */
     setenv ("MMM_PATH", mmm_path, 1);
+
+    {
+      struct stat sbuf;
+      while ( 0 != stat (mmm_path, &sbuf))
+        usleep(250);
+      usleep(250);
+    }
   }
 
   {
@@ -575,7 +588,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
     if (env && !is_compositor)
     {
       fb = mmm_new_shm (path, width, height, babl_format);
-      mmm_set_size (fb, width, height);
+      mmm_wait_neutral (fb);
     }
   }
 
@@ -585,14 +598,22 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
     exit (-1);
   }
 
+  if (width < 0 || height < 0)
+  {
+    width = 100;
+    height = 100;
+    usleep(300000);   // XXX: ugly hack - but what to wait for?
+
+    if(mmm_get_value (fb, "host-width"))
+      width = atoi(mmm_get_value (fb, "host-width"));
+    if(mmm_get_value (fb, "host-height"))
+      height = atoi(mmm_get_value (fb, "host-height"));
+  }
+  mmm_set_size (fb, width, height);
+
   if (fb)
     {
       mmm_set_title (fb, "mmm");
-    }
-
-  if (!fb)
-    {
-      fprintf (stderr, "unable to get framebuffer\n");
     }
 
   mmm_pcm_set_sample_rate (fb, 44100);
@@ -658,6 +679,8 @@ static void mmm_init_header (MmmShm *shm)
 static Mmm *mmm_new_shm (const char *mmm_path, int width, int height, void *babl_format)
 {
   Mmm *fb = calloc (sizeof (Mmm), 1);
+
+  fprintf (stderr, "%i %s %ix%i\n", getpid(), __FUNCTION__, width, height);
   if (width < 0 && height < 0)
     {
       width = 640;

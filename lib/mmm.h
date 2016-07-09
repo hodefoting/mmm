@@ -67,6 +67,7 @@ void           mmm_set_size             (Mmm *fb, int width, int height);
 
 void           mmm_get_size             (Mmm *fb, int *width, int *height);
 
+void           mmm_get_full_size        (Mmm *fb, int *width, int *height);
 /* set a title to be used
  */
 void           mmm_set_title            (Mmm *fb, const char *title);

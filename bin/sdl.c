@@ -217,6 +217,21 @@ Host *host_sdl_new (const char *path, int width, int height)
     host->fullscreen = 1;
   }
 
+
+  {
+    SDL_Rect **modes;
+    modes = SDL_ListModes(NULL, SDL_HWSURFACE|SDL_FULLSCREEN);
+    if (modes == (SDL_Rect**)0) {
+    }
+    else
+    {
+      host_width = modes[0]->w - 128;
+      host_height = modes[0]->h - 128;
+
+    }
+  }
+
+
   host->width = width;
   host->bpp = 4;
   host->stride = host->width * host->bpp;

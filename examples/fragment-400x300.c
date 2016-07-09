@@ -12,6 +12,9 @@
 #define NULL ((void*)0)
 #endif
 
+static int W = 400;
+static int H = 300;
+
 int tx = 0;
 int ty = 0;
 
@@ -24,8 +27,6 @@ static inline int fastrand () {
 
 typedef int (*Fragment)(int x, int y, int foo);
 
-static int W = 1024;
-static int H = 760;
 
 static inline int frag_constant (int x, int y, int foo) { return foo; }
 
@@ -191,7 +192,7 @@ void ghostbuster (Mmm *fb)
 
 int main ()
 {
-  Mmm *fb = mmm_new (512, 384, 0, NULL);
+  Mmm *fb = mmm_new (W, H, 0, NULL);
   int j;
   if (!fb)
     {

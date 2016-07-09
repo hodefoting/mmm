@@ -26,6 +26,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 int host_has_quit = 0;
 
+int host_width = 200;
+int host_height = 200;
+
 void host_clear_dirt (Host *host)
 {
   host->dirty_xmin = 10000;
@@ -88,6 +91,14 @@ void validate_client (Host *host, const char *client_name)
       return;
     }
 
+    {
+      char val[200];
+      sprintf (val, "%i", host_width);
+      mmm_set_value (client->mmm, "host-width", val);
+      sprintf (val, "%i", host_height);
+      mmm_set_value (client->mmm, "host-height", val);
+    }
+
     client->filename = strdup (client_name);
 
     if (client->pid != getpid ())
@@ -98,10 +109,12 @@ void validate_client (Host *host, const char *client_name)
         static int pos = 0;
         int width  = mmm_get_width (client->mmm);
         int height = mmm_get_width (client->mmm);
+        fprintf (stderr, "em\n");
 
         if (width < 0 || height < 0)
         {
           mmm_host_set_size (client->mmm, host->width, host->height);
+          fprintf (stderr, "embiggening!!!!\n");
           mmm_set_x (client->mmm, 0);
           mmm_set_y (client->mmm, 0);
         }
