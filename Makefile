@@ -34,15 +34,18 @@ mmm.kobo: bin/host.c libmmm.a bin/kobo*.c  bin/linux-*.c
 	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/kobo*.c bin/linux-*.c -o $@
 
 install: install-bins
-install-bins: mmm.linux mmm.sdl
+install-bins: mmm.linux mmm.sdl mmm.kobo
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install mmm $(DESTDIR)$(PREFIX)/bin
 	install mmm.linux $(DESTDIR)$(PREFIX)/bin
+	install mmm.kobo $(DESTDIR)$(PREFIX)/bin
 	#install mmm.static $(DESTDIR)$(PREFIX)/bin
 	[ -f mmm.sdl ] && install mmm.sdl $(DESTDIR)$(PREFIX)/bin || true
 
 mmm.static: bin/*.c libmmm.a lib/*.h
 	$(CC) -Os -static bin/linux*.c -lc -lpthread_nonshared libmmm.a -Ilib bin/host*.c -o $@
+mmm.skobo: bin/host.c libmmm.a bin/kobo*.c  bin/linux-*.c
+	$(CC) -Os -static -lpthread bin/host.c libmmm.a bin/kobo*.c -Ilib bin/linux-*.c -o $@
 	#$(CC) -Os -static bin/linux*.c -lpthread libmmm.a -Ilib bin/host*.c -o $@
 	strip $@
 
