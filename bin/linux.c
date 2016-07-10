@@ -544,6 +544,8 @@ Host *host_linux_new (const char *path, int width, int height)
        free (host_linux);
        return NULL;
      }
+  host_width = host_linux->vinfo.xres;
+  host_height = host_linux->vinfo.yres;
 
   host_linux->fb_bits = host_linux->vinfo.bits_per_pixel;
   fprintf (stderr, "fb bits: %i\n", host_linux->fb_bits);
