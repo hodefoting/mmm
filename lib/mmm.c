@@ -547,7 +547,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
   Mmm *fb = NULL;
   char *path = NULL;
 
-  fprintf (stderr, "%i %s %ix%i\n", getpid(), __FUNCTION__, width, height);
+  //fprintf (stderr, "%i %s %ix%i\n", getpid(), __FUNCTION__, width, height);
   
   path = getenv ("MMM_PATH");
 
@@ -680,7 +680,7 @@ static Mmm *mmm_new_shm (const char *mmm_path, int width, int height, void *babl
 {
   Mmm *fb = calloc (sizeof (Mmm), 1);
 
-  fprintf (stderr, "%i %s %ix%i\n", getpid(), __FUNCTION__, width, height);
+  //fprintf (stderr, "%i %s %ix%i\n", getpid(), __FUNCTION__, width, height);
   if (width < 0 && height < 0)
     {
       width = 640;
