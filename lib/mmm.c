@@ -600,8 +600,8 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
 
   if (width < 0 || height < 0)
   {
-    width = 100;
-    height = 100;
+    width = 400;
+    height = 300;
     usleep(300000);   // XXX: ugly hack - but what to wait for?
 
     if(mmm_get_value (fb, "host-width"))
