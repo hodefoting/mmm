@@ -602,7 +602,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
   {
     width = 400;
     height = 300;
-    usleep(300000);   // XXX: ugly hack - but what to wait for?
+    usleep(200000);   // XXX: ugly hack - but what to wait for?
 
     if(mmm_get_value (fb, "host-width"))
       width = atoi(mmm_get_value (fb, "host-width"));
