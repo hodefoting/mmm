@@ -5,11 +5,6 @@
 
 typedef struct _EvSource EvSource;
 
-/* this is the raw interface emitting somewhat raw events, to
- * be to picked up by the ufbice. For client's this would
- * be hooked up to an oc-event source, that provides the low-level
- * hook up.
- */
 struct _EvSource
 {
   void   *priv; /* private storage  */

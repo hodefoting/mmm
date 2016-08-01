@@ -25,6 +25,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <stdlib.h>
 
 #include <signal.h>
+#include "mmm.h"
+#include "host.h"
 #include "linux-evsource.h"
 
 #ifndef MIN
@@ -34,10 +36,24 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define MAX(a,b)  (((a)>(b))?(a):(b))
 #endif
 
+static int evsource_kb_has_event (void);
+static char *evsource_kb_get_event (void);
+static void evsource_kb_destroy (int sign);
+static int evsource_kb_get_fd (void);
+
 /* kept out of struct to be reachable by atexit */
+static EvSource ev_src_kb = {
+  NULL,
+  (void*)evsource_kb_has_event,
+  (void*)evsource_kb_get_event,
+  (void*)evsource_kb_destroy,
+  (void*)evsource_kb_get_fd,
+  NULL
+}; 
 
 static struct termios orig_attr;
 
+int is_active (Host *host);
 static void real_evsource_kb_destroy (int sign)
 {
   static int done = 0;
@@ -334,10 +350,14 @@ static char *evsource_kb_get_event (void)
   unsigned char buf[20];
   int length;
 
+
   for (length = 0; length < 10; length ++)
     if (read (STDIN_FILENO, &buf[length], 1) != -1)
       {
         const UfbKeyCode *match = NULL;
+
+        if (!is_active (ev_src_kb.priv))
+           return NULL;
 
         /* special case ESC, so that we can use it alone in keybindings */
         if (length == 0 && buf[0] == 27)
@@ -411,14 +431,6 @@ static int evsource_kb_get_fd (void)
   return STDIN_FILENO;
 }
 
-static EvSource ev_src_kb = {
-  NULL,
-  (void*)evsource_kb_has_event,
-  (void*)evsource_kb_get_event,
-  (void*)evsource_kb_destroy,
-  (void*)evsource_kb_get_fd,
-  NULL
-}; 
 
 EvSource *evsource_kb_new (void)
 {

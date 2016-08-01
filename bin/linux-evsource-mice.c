@@ -19,12 +19,28 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include "mmm.h"
+#include "host.h"
 #include "linux-evsource.h"
 
 /* written to work with the zforce ir touchscreen of a kobo glo,
  * probably works with a range of /dev/input/event classs of
  * touchscreens.
  */
+
+static int mice_has_event ();
+static char *mice_get_event ();
+static void mice_destroy ();
+static int mice_get_fd (EvSource *ev_source);
+static void mice_set_coord (EvSource *ev_source, double x, double y);
+
+static EvSource ev_src_mice = {
+  NULL,
+  (void*)mice_has_event,
+  (void*)mice_get_event,
+  (void*)mice_destroy,
+  mice_get_fd,
+  mice_set_coord
+};
 
 typedef struct Mice
 {
@@ -35,6 +51,8 @@ typedef struct Mice
 } Mice;
 
 Mice *_mrg_evsrc_coord = NULL;
+
+int is_active (Host *host);
 
 void _mmm_get_coords (Mmm *mmm, double *x, double *y)
 {
@@ -119,6 +137,9 @@ static char *mice_get_event ()
 
   mrg_mice_this->prev_state = buf[0];
 
+  if (!is_active (ev_src_mice.priv))
+    return NULL;
+
   {
     char *r = malloc (64);
     sprintf (r, "%s %.0f %.0f %i", ret, mrg_mice_this->x, mrg_mice_this->y, mrg_mice_this->fd);
@@ -138,15 +159,6 @@ static void mice_set_coord (EvSource *ev_source, double x, double y)
   mrg_mice_this->x = x;
   mrg_mice_this->y = y;
 }
-
-static EvSource ev_src_mice = {
-  NULL,
-  (void*)mice_has_event,
-  (void*)mice_get_event,
-  (void*)mice_destroy,
-  mice_get_fd,
-  mice_set_coord
-};
 
 EvSource *evsource_mice_new (void)
 {

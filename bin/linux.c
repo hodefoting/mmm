@@ -601,8 +601,12 @@ Host *host_linux_new (const char *path, int width, int height)
 
   host_clear_dirt (host);
 
-  host_add_evsource (host, evsource_kb_new ());
-  host_add_evsource (host, evsource_mice_new ());
+  EvSource *kb = evsource_kb_new ();
+  EvSource *mice = evsource_mice_new ();
+  host_add_evsource (host, kb);
+  host_add_evsource (host, mice);
+  kb->priv = host;
+  mice->priv = host;
 
   return host;
 }
