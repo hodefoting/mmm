@@ -516,7 +516,7 @@ void mmm_add_event (Mmm *fb, const char *event)
     {
       static int once = 0;
       if (!once)
-        fprintf (stderr, "oc event queue overflow\n");
+        fprintf (stderr, "mmm event queue overflow\n");
       once = 1;
       return;
     }

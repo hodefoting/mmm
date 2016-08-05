@@ -135,12 +135,12 @@ static int evsource_kb_has_event (void)
  *
  * this table is taken from nchanterm.
  */
-typedef struct UfbKeyCode {
+typedef struct MmmKeyCode {
   char *nick;          /* programmers name for key */
   char *label;         /* utf8 label for key */
   char  sequence[10];  /* terminal sequence */
-} UfbKeyCode;
-static const UfbKeyCode ufb_keycodes[]={  
+} MmmKeyCode;
+static const MmmKeyCode ufb_keycodes[]={  
   {"up",                  "↑",     "\e[A"},
   {"down",                "↓",     "\e[B"}, 
   {"right",               "→",     "\e[C"}, 
@@ -306,7 +306,7 @@ static const UfbKeyCode ufb_keycodes[]={
   {NULL, }
 };
 
-static int fb_keyboard_match_keycode (const char *buf, int length, const UfbKeyCode **ret)
+static int fb_keyboard_match_keycode (const char *buf, int length, const MmmKeyCode **ret)
 {
   int i;
   int matches = 0;
@@ -354,7 +354,7 @@ static char *evsource_kb_get_event (void)
   for (length = 0; length < 10; length ++)
     if (read (STDIN_FILENO, &buf[length], 1) != -1)
       {
-        const UfbKeyCode *match = NULL;
+        const MmmKeyCode *match = NULL;
 
         if (!is_active (ev_src_kb.priv))
            return NULL;
