@@ -622,6 +622,8 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
   mmm_pcm_set_sample_rate (fb, 44100);
   mmm_pcm_set_format (fb, MMM_s16);
 
+  mmm_write_done (fb, 0,0, width, height);
+
   return fb;
 }
 
