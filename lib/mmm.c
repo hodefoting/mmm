@@ -597,15 +597,18 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
     fprintf (stderr, "failed to initialize framebuffer\n");
     exit (-1);
   }
-
   if (width < 0 || height < 0)
   {
+    int waits = 0;
     width = 400;
     height = 300;
-    usleep(200000);   // XXX: ugly hack - but what to wait for?
+
+    while (mmm_get_value (fb, "host-height") == NULL && (waits ++ < 20))  // XXX: this wait is ugly
+        usleep (1000);
 
     if(mmm_get_value (fb, "host-width"))
       width = atoi(mmm_get_value (fb, "host-width"));
+
     if(mmm_get_value (fb, "host-height"))
       height = atoi(mmm_get_value (fb, "host-height"));
   }
