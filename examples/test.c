@@ -29,9 +29,9 @@ int main ()
       uint8_t *pixel = &buffer[y * stride];
       for (x = 0; x < width; x++, pixel+=4)
       {
-        pixel[0] = ( ( (int)(((x) / (frame/18123.0)) + (int)(y / (frame/18123.0)) )) % 2 ==  0) ? 255 : 0;
-        pixel[1] = ( ( (int)(((x) / (frame/17111.0)) + (int)(y / (frame/13111.0)) )) % 2 ==  0) ? 255 : 0;
-        pixel[2] = ( ( (int)(((x) / (frame/11111.0)) + (int)(y / (frame/11111.0)) )) % 2 ==  0) ? 255 : 0;
+        pixel[0] = (int)((x * 255.0) / width );
+        pixel[1] = (int)((y * 255.0) / height );
+        pixel[2] = (int)((width-x) * 255.0 / width );
         pixel[3] = 255;
       }
     }
