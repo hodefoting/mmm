@@ -210,27 +210,23 @@ Host *host_sdl_new (const char *path, int width, int height)
     return NULL;
   }
 
+
   if (width < 0)
-  {
-    width = 1024;
-    height = 768;
-    host->fullscreen = 1;
-  }
-
-
   {
     SDL_Rect **modes;
     modes = SDL_ListModes(NULL, SDL_HWSURFACE|SDL_FULLSCREEN);
+    host->fullscreen = 1;
     if (modes == (SDL_Rect**)0) {
+      width=host_width = 400;
+      height=host_height = 300;
     }
     else
     {
-      host_width = modes[0]->w - 128;
-      host_height = modes[0]->h - 128;
-
+      width=host_width = modes[0]->w - 128;
+      height=host_height = modes[0]->h - 128;
     }
-  }
 
+  }
 
   host->width = width;
   host->bpp = 4;
@@ -410,15 +406,18 @@ static int sdl_check_events (Host *host)
         break;
       case SDL_VIDEORESIZE:
         host_sdl->screen = SDL_SetVideoMode (event.resize.w,
-                                         event.resize.h,32,
-                                         baseflags | SDL_RESIZABLE);
+                                             event.resize.h,32,
+                                             baseflags | SDL_RESIZABLE);
         host->width = event.resize.w;
         host->height = event.resize.h;
         host->stride = host->width * host->bpp;
 
-        if (host->single_app && host->focused)
+        fprintf (stderr, "%ix%i\n", event.resize.w, event.resize.h);
+#if 1
+    //    if (host->single_app && host->focused)
           mmm_host_set_size (host->focused->mmm,
-              host->width, host->height);
+                             host->width, host->height);
+#endif
         break;
     }
     got_event = 1;
