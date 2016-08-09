@@ -461,6 +461,7 @@ mmm_host_check_size (Mmm *fb, int *width, int *height)
       ret = 1;
       fb->stride = fb->shm->fb.stride;
       fb->width = fb->shm->fb.width;
+      fb->height = fb->shm->fb.height;
     }
   if (width || height)
     mmm_get_size (fb, width, height);
@@ -603,7 +604,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
     width = 400;
     height = 300;
 
-    while (mmm_get_value (fb, "host-height") == NULL && (waits ++ < 20))  // XXX: this wait is ugly
+    while (mmm_get_value (fb, "host-height") == NULL && (waits ++ < MMM_WAIT_ATTEMPTS/2))  // XXX: this wait is ugly
         usleep (1000);
 
     if(mmm_get_value (fb, "host-width"))
