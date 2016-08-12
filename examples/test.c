@@ -37,6 +37,12 @@ int main ()
     }
     mmm_write_done (fb, 0, 0, -1, -1);
     frame++;
+
+    while (mmm_has_event (fb))
+    {
+        const char *event = mmm_get_event (fb);
+        fprintf (stderr, "%s\n", event);
+    }
   }
 
   mmm_destroy (fb);
