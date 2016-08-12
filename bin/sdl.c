@@ -334,9 +334,17 @@ static int sdl_check_events (Host *host)
       case SDL_KEYDOWN:
         {
           char buf[64] = "";
-          char *name = NULL;
+          char *name = buf;
 
           buf[mmfb_unichar_to_utf8 (event.key.keysym.unicode, (void*)buf)]=0;
+          if (event.key.keysym.mod & (KMOD_CTRL))
+            {
+            buf[0] = event.key.keysym.unicode + 96;
+            buf[1] = 0;
+            }
+
+
+
           switch (event.key.keysym.sym)
           {
             case SDLK_F1:        name = "F1";       break;
@@ -367,37 +375,32 @@ static int sdl_check_events (Host *host)
             case SDLK_PAGEDOWN:  name = "page-down";break;
             case SDLK_PAGEUP:    name = "page-up";  break;
 
-            default:
-              if (event.key.keysym.unicode < 32)
-              {
-                buf[0] = event.key.keysym.unicode;
-                buf[1] = 0;
-              }
-              name = (void*)&buf[0];
+            default:;
           }
+
+          if (event.key.keysym.mod & (KMOD_CTRL) ||
+              event.key.keysym.mod & (KMOD_ALT) ||
+              strlen (name) >= 3)
+          {
+
           if (event.key.keysym.mod & (KMOD_CTRL))
           {
-            char buf2[64] = "";
-            sprintf (buf2, "control-%c", event.key.keysym.sym);
-            name = buf2;
-            if (event.key.keysym.mod & (KMOD_SHIFT))
-            {
-              char buf2[64] = "";
-              sprintf (buf2, "shift-%c", event.key.keysym.sym);
-              name = buf2;
-            }
+            static char buf[64] = "";
+            sprintf (buf, "control-%s", name);
+            name = buf;
           }
           if (event.key.keysym.mod & (KMOD_ALT))
           {
-            char buf2[64] = "";
-            sprintf (buf2, "alt-%c", event.key.keysym.sym);
-            name = buf2;
-            if (event.key.keysym.mod & (KMOD_SHIFT))
-            {
-              char buf2[64] = "";
-              sprintf (buf2, "shift-%c", event.key.keysym.sym);
-              name = buf2;
-            }
+            static char buf[64] = "";
+            sprintf (buf, "alt-%s", name);
+            name = buf;
+          }
+          if (event.key.keysym.mod & (KMOD_SHIFT))
+          {
+            static char buf[64] = "";
+            sprintf (buf, "shift-%s", name);
+            name = buf;
+          }
           }
           if (name)
             if (host->focused)
