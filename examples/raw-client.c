@@ -1,9 +1,7 @@
 /* this is to serve as a minimal - no dependencies application
- * integrating with an ufb compositor - this example is minimal
- * enough that it doesn't even rely on the ufb .c file
+ * integrating with an mmm compositor - this example is minimal
+ * enough that it doesn't even rely on the mmm .c file
  */
-
-
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,25 +12,29 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-#define WIDTH              512
-#define HEIGHT             384
-#define BPP                4
+#define WIDTH               512
+#define HEIGHT              384
+#define BPP                 4
 
-#define UFB_PID             0x18
-#define UFB_TITLE           0xb0
-#define UFB_WIDTH           0x3b0
-#define UFB_HEIGHT          0x3b4
-#define UFB_STRIDE          0x3b8
-#define UFB_FB_OFFSET       0x3bc
-#define UFB_FLIP_STATE      0x3c0
-//#define UFB_SIZE          131124  // too low and it will conflict with pcm-data
+#define MMM_PID             0x18
+#define MMM_TITLE           0xb0
+#define MMM_WIDTH           0x5b0
+#define MMM_HEIGHT          0x5b4
 
-#define UFB_SIZE 0x4ffff
-#define UFB_FLIP_INIT       0
-#define UFB_FLIP_NEUTRAL    1
-#define UFB_FLIP_DRAWING    2
-#define UFB_FLIP_WAIT_FLIP  3
-#define UFB_FLIP_FLIPPING   4
+#define MMM_DESIRED_WIDTH   0x5d8
+#define MMM_DESIRED_HEIGHT  0x5dc
+
+
+#define MMM_STRIDE          0x5b8
+#define MMM_FB_OFFSET       0x5bc
+#define MMM_FLIP_STATE      0x5c0
+
+#define MMM_SIZE            0x48c70
+#define MMM_FLIP_INIT       0
+#define MMM_FLIP_NEUTRAL    1
+#define MMM_FLIP_DRAWING    2
+#define MMM_FLIP_WAIT_FLIP  3
+#define MMM_FLIP_FLIPPING   4
 
 #define PEEK(addr)     (*(int32_t*)(&ram_base[addr]))
 #define POKE(addr,val) do{(*(int32_t*)(&ram_base[addr]))=(val); }while(0)
@@ -43,57 +45,51 @@ static uint8_t *pico_fb (int width, int height)
 {
   char path[512];
   int fd;
-  int size = UFB_SIZE + width * height * BPP;
-  const char *ufb_path = getenv ("MMM_PATH");
-  if (!ufb_path)
+  int size = MMM_SIZE + width * height * BPP;
+  const char *mmm_path = getenv ("MMM_PATH");
+  if (!mmm_path)
     return NULL;
-  sprintf (path, "%s/fb.XXXXXX", ufb_path);
+  sprintf (path, "%s/fb.XXXXXX", mmm_path);
   fd = mkstemp (path);
   pwrite (fd, "", 1, size);
   fsync (fd);
   chmod (path, 511);
   ram_base = mmap (NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   memset (ram_base, 0, size);
-  strcpy ((void*)ram_base + UFB_TITLE, "foo");
+  strcpy ((void*)ram_base + MMM_TITLE, "foo");
 
-  POKE (UFB_FLIP_STATE,  UFB_FLIP_INIT);
-  POKE (UFB_PID,         (int)getpid());
-  POKE (UFB_WIDTH,       width);
-  POKE (UFB_HEIGHT,      height);
-  POKE (UFB_STRIDE,      width * BPP);
-  /* format? */
-  POKE (UFB_FB_OFFSET,   UFB_SIZE);
-  POKE (UFB_FLIP_STATE,  UFB_FLIP_NEUTRAL);
+  POKE (MMM_FLIP_STATE,  MMM_FLIP_INIT);
+  POKE (MMM_PID,         (int)getpid());
 
-#if 0
-  poke to start pcm
+  POKE (MMM_DESIRED_WIDTH,  width);
+  POKE (MMM_DESIRED_HEIGHT, height);
+  POKE (MMM_WIDTH,          width);
+  POKE (MMM_HEIGHT,         height);
+  POKE (MMM_STRIDE,         width * BPP);
+  POKE (MMM_FB_OFFSET,      MMM_SIZE);
+  POKE (MMM_FLIP_STATE,     MMM_FLIP_NEUTRAL);
 
-  poke to start events
-#endif
-
-
-
-  return (uint8_t*) & PEEK(UFB_SIZE);
+  return (uint8_t*) & PEEK(MMM_SIZE);
 }
 
 static void    pico_exit (void)
 {
   if (ram_base)
-    munmap (ram_base, UFB_SIZE * PEEK (UFB_WIDTH) * PEEK (UFB_HEIGHT) * BPP);
+    munmap (ram_base, MMM_SIZE * PEEK (MMM_WIDTH) * PEEK (MMM_HEIGHT) * BPP);
   ram_base = NULL;
 }
 
 static void wait_sync (void)
 {
   /* this client will block if there is no compositor */
-  while (PEEK(UFB_FLIP_STATE) != UFB_FLIP_NEUTRAL)
+  while (PEEK(MMM_FLIP_STATE) != MMM_FLIP_NEUTRAL)
     usleep (5000);
-  POKE (UFB_FLIP_STATE, UFB_FLIP_DRAWING);
+  POKE (MMM_FLIP_STATE, MMM_FLIP_DRAWING);
 }
 
 static void flip_buffer (void)
 {
-  POKE (UFB_FLIP_STATE, UFB_FLIP_WAIT_FLIP);
+  POKE (MMM_FLIP_STATE, MMM_FLIP_WAIT_FLIP);
 }
 
 int main (int argc, char **argv)

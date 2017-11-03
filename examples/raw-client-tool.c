@@ -18,6 +18,8 @@ int main ()
   GET_ADDR(fb.stride)
   GET_ADDR(fb.fb_offset)
   GET_ADDR(fb.flip_state)
+  GET_ADDR(fb.desired_width)
+  GET_ADDR(fb.desired_height)
 
   GET_ADDR(fb.x)
   GET_ADDR(fb.y)
