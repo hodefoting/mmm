@@ -43,7 +43,7 @@ typedef enum {
 
 typedef struct _MmmShm MmmShm;
 
-#define MMM_AUDIO_BUFFER_SIZE  4096
+#define MMM_AUDIO_BUFFER_SIZE  8192 * 4
 
 typedef struct MmmBlock {
   uint64_t type;   /* can also be interpreted as 8 chars               */
@@ -128,7 +128,7 @@ typedef struct MmmValues {
 typedef struct MmmPcm {
   MmmBlock       block;
   MmmAudioFormat format;                        /* C */
-  int            sample_rate;                   /* C */ 
+  int            sample_rate;                   /* C */
   int            host_sample_rate;              /* H */
   int            read;                          /* H */
   int            write;                         /* C */
@@ -136,7 +136,7 @@ typedef struct MmmPcm {
   uint8_t        buffer[MMM_AUDIO_BUFFER_SIZE]; /* C */
 } MmmPcm;
 
-struct  _MmmShm { 
+struct  _MmmShm {
   MmmHeader      header;    /* must be first  in file */
   MmmFb          fb;        /* must be second in file */
   MmmEvents      events;    /* must be third  in file */
@@ -220,7 +220,7 @@ mmm_wait_neutral (Mmm *fb)
     usleep (1000);
 
   return (attempts > 0 ? 0 : -1);
-} 
+}
 
 static int
 mmm_set_state (Mmm *fb, MmmFlipState state)
@@ -240,7 +240,7 @@ mmm_get_buffer_write (Mmm *fb, int *width, int *height, int *stride,
   //fprintf (stderr, "[%i]", fb->bpp);
 
   mmm_set_state (fb, MMM_DRAWING);
-  if (width) *width = fb->width;
+  if (width)  *width  = fb->width;
   if (height) *height = fb->height;
   if (stride) *stride = fb->stride;
 
@@ -378,7 +378,7 @@ mmm_client_reopen (const char *path)
       free (fb);
       return NULL;
     }
-  
+
   /* first we map just the MmmShm struct */
   fb->shm = mmap (NULL, sizeof (MmmShm), PROT_READ | PROT_WRITE, MAP_SHARED, fb->fd, 0);
   fb->mapped_size = sizeof (MmmShm);
@@ -387,7 +387,7 @@ mmm_client_reopen (const char *path)
   fb->height = fb->shm->fb.height;
   fb->stride = fb->shm->fb.width * fb->bpp;
 
-  mmm_remap (fb); 
+  mmm_remap (fb);
   fb->path = strdup (path);
   return fb;
 }
@@ -492,7 +492,7 @@ void mmm_set_size (Mmm *fb, int width, int height)
     usleep (500);
   fb->shm->fb.flip_state = MMM_INITIALIZING;
 
-  fb->shm->fb.width = fb->shm->fb.desired_width =  width;
+  fb->shm->fb.width  = fb->shm->fb.desired_width  = width;
   fb->shm->fb.height = fb->shm->fb.desired_height = height;
   fb->shm->fb.stride = fb->shm->fb.width * fb->bpp;
   mmm_remap (fb);
@@ -549,7 +549,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
   char *path = NULL;
 
   //fprintf (stderr, "%i %s %ix%i\n", getpid(), __FUNCTION__, width, height);
-  
+
   path = getenv ("MMM_PATH");
 
   if (!path)
@@ -594,7 +594,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
   }
 
   if (!fb)
-  { 
+  {
     fprintf (stderr, "failed to initialize framebuffer\n");
     exit (-1);
   }
@@ -620,7 +620,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
       mmm_set_title (fb, "mmm");
     }
 
-  mmm_pcm_set_sample_rate (fb, 44100);
+  mmm_pcm_set_sample_rate (fb, 48000);
   mmm_pcm_set_format (fb, MMM_s16);
 
   mmm_write_done (fb, 0,0, width, height);
@@ -824,6 +824,8 @@ void mmm_host_set_size (Mmm *fb, int width, int height)
 void mmm_pcm_set_sample_rate (Mmm *fb, int freq)
 {
   fb->shm->pcm.sample_rate = freq;
+  fb->shm->pcm.read  = 0;
+  fb->shm->pcm.write = 1;
 }
 
 int mmm_pcm_get_sample_rate (Mmm *fb)
@@ -834,12 +836,13 @@ int mmm_pcm_get_sample_rate (Mmm *fb)
 void mmm_pcm_set_format      (Mmm *fb, MmmAudioFormat format)
 {
   fb->shm->pcm.format = format;
+  fb->shm->pcm.read = 0;
+  fb->shm->pcm.write = 1;
 }
 
-int mmm_pcm_bpf (Mmm *fb)
+int mmm_pcm_bytes_per_frame (Mmm *fb)
 {
   MmmAudioFormat format = fb->shm->pcm.format;
-  //return 2;
   switch (format)
   {
     case MMM_f32:  return 4;
@@ -850,46 +853,52 @@ int mmm_pcm_bpf (Mmm *fb)
   }
 }
 
+int mmm_pcm_bpf (Mmm *fb)
+{
+  return mmm_pcm_bytes_per_frame (fb);
+}
+
 static inline int mmm_pcm_frame_count (Mmm *fb)
 {
-  return (MMM_AUDIO_BUFFER_SIZE / mmm_pcm_bpf (fb));
+  return (MMM_AUDIO_BUFFER_SIZE / mmm_pcm_bytes_per_frame (fb));
 }
 
 int  mmm_pcm_get_queued_frames (Mmm *fb)
 {
-  int q = fb->shm->pcm.write;
+  int w = fb->shm->pcm.write;
   int p = fb->shm->pcm.read;
 
-  if (p == q)
+  if (p == w)
     /* |    p      | legend: .. played/unused */
-    /* |....q......|         == queued        */
+    /* |....w......|         == queued        */
     return 0;
-  
-  else if (q > p)
+
+  else if (w > p)
     /* |  p        | */
-    /* |..===q.....| */
-    
-    return (q - p);
+    /* |..===w.....| */
+
+    return (w - p);
   else
     /* |       p   | */
-    /* |==q....====| */
-    return q + (mmm_pcm_frame_count (fb) - p);
+    /* |==w....====| */
+    return w + (mmm_pcm_frame_count (fb) - p);
 }
 
 int  mmm_pcm_get_free_frames (Mmm *fb)
 {
   int total = mmm_pcm_frame_count (fb);
-  return total - mmm_pcm_get_queued_frames (fb) - 1;
+  return total - mmm_pcm_get_queued_frames (fb) - 2;
 }
 
 int  mmm_pcm_get_frame_chunk (Mmm *fb)
 {
   int total = mmm_pcm_frame_count (fb);
   int free = mmm_pcm_get_free_frames (fb);
-  return free;
+
+  return free - 2;
   int ret = total / 2;
-  if (ret > free)
-    ret = free;
+  if (ret > free - 2)
+    ret = free - 2;
   return ret;
 }
 
@@ -900,53 +909,65 @@ int mmm_pcm_write (Mmm *fb, const int8_t *data, int frames)
   int total = mmm_pcm_frame_count (fb);
   uint8_t *seg1, *seg2 = NULL;
   int      seg1_len, seg2_len = 0;
-  int      bpf = mmm_pcm_bpf (fb); /* bytes per frame */
+  int      bpf = mmm_pcm_bytes_per_frame (fb); /* bytes per frame */
 
-  int q = fb->shm->pcm.write;
-  int p = fb->shm->pcm.read;
+  int w = fb->shm->pcm.write;
+  int r = fb->shm->pcm.read;
   int ret = 0;
 
-  if ((q == p - 1 ) || ((q == total-1) && p == 0))
+  if (mmm_pcm_get_free_frames (fb) < frames)
+  {
+    fprintf (stderr, "%i frames audio overrun\n", mmm_pcm_get_free_frames (fb) - frames);
+    frames = mmm_pcm_get_free_frames (fb);
+  }
+
+  if ((w == r - 1 ) || ((w == total-1) && r == 0))
   {
     fprintf (stderr, "%i frames audio overrun\n", frames);
     return ret;
   }
-  if (p == q)
+  if (r == w)
   {
-    /* |     p     | legend: .. played/unused */
-    /* |.....q.....|         == queued        */
-    seg1     = &fb->shm->pcm.buffer[q * bpf];
-    seg1_len = total - q;
-    if (q < 2)
-      seg1_len -= 2;
+    /* |     r     | legend: .. played/unused */
+    /* |.....w.....|         == queued        */
+    seg1     = &fb->shm->pcm.buffer[w * bpf];
+    seg1_len = total - w;
+    if (w < 2)
+      seg2_len = 0;
     else
     {
       seg2     = &fb->shm->pcm.buffer[0];
-      seg2_len = q - 2;
+      seg2_len = w - 2;
     }
   }
-  else if (q > p)
+  else if (w > r && r == 0)
   {
-    /* |  p        | */
-    /* |..===q.....| */
+    /* |  r        | */
+    /* |..===w.....| */
     
-    seg1     = &fb->shm->pcm.buffer[ q * bpf];
-    seg1_len = total - q;
+    seg1     = &fb->shm->pcm.buffer[ w * bpf];
+    seg1_len = total - w;
+    seg2     = NULL;
+    seg2_len = 0;
+  }
+  else if (w > r)
+  {
+    /* |  r        | */
+    /* |..===w.....| */
+    
+    seg1     = &fb->shm->pcm.buffer[ w * bpf];
+    seg1_len = total - w;
     seg2     = &fb->shm->pcm.buffer[0];
-    seg2_len = p - 2;
-
+    seg2_len = r - 2;
   }
   else
   {
-    /* |       p   | */
-    /* |==q....====| */
-    seg1 = &fb->shm->pcm.buffer[(q) * bpf];
-    seg1_len = p-q;
+    /* |       r   | */
+    /* |==w....====| */
+    seg1 = &fb->shm->pcm.buffer[(w) * bpf];
+    seg1_len = r-w;
     seg2_len = 0;
-  }
-
-  if (seg1_len > frames)
-    seg1_len = frames;
+  } if (seg1_len > frames) seg1_len = frames;
   frames -= seg1_len;
 
   memcpy (seg1, data, seg1_len * bpf);
@@ -977,9 +998,9 @@ int mmm_pcm_write (Mmm *fb, const int8_t *data, int frames)
 
 #if USE_ATOMIC_OPS
   __sync_lock_test_and_set(&fb->shm->pcm.write,
-                     (fb->shm->pcm.write + seg1_len) % total);
+                     (fb->shm->pcm.write + seg2_len) % total);
 #else
-  fb->shm->pcm.write = (fb->shm->pcm.write + seg1_len) % total;
+  fb->shm->pcm.write = (fb->shm->pcm.write + seg2_len) % total;
 #endif
 
   if (frames > 0)
@@ -993,35 +1014,45 @@ int  mmm_pcm_read (Mmm *fb, int8_t *data, int frames)
   int      total = mmm_pcm_frame_count (fb);
   uint8_t *seg1, *seg2 = NULL;
   int      seg1_len, seg2_len = 0;
-  int      bpf = mmm_pcm_bpf (fb); /* bytes per frame */
+  int      bpf = mmm_pcm_bytes_per_frame (fb); /* bytes per frame */
   int      ret = 0;
 
-  int q = fb->shm->pcm.write;
-  int p = fb->shm->pcm.read;
+  int w = fb->shm->pcm.write;
+  int r = fb->shm->pcm.read;
 
-  if (p == q)
+
+  if (r == w)
   {
-    /* |    p      | legend: .. played/unused */
-    /* |....q......|         == queued        */
+    /* |    r      | legend: .. played/unused */
+    /* |....w......|         == queued        */
     return 0;
   }
 
-  else if (q > p)
+  else if (w > r)
   {
-    /* |  p        | */
-    /* |..===q.....| */
-    seg1     = &fb->shm->pcm.buffer[p * bpf];
-    seg1_len = (q - p);
+    /* |  r        | */
+    /* |..===w.....| */
+    seg1     = &fb->shm->pcm.buffer[r * bpf];
+    seg1_len = (w - r);
+    seg2_len = 0;
+  }
+  else if (w == 0)
+  {
+    /* |       r   | */
+    /* |w......====| */
+    seg1     = &fb->shm->pcm.buffer[r * bpf];
+    seg1_len = total - r;
+    seg2     = NULL;
     seg2_len = 0;
   }
   else
   {
-    seg1     = &fb->shm->pcm.buffer[p * bpf];
-    seg1_len = total - p;
+    /* |       r   | */
+    /* |==w....====| */
+    seg1     = &fb->shm->pcm.buffer[r * bpf];
+    seg1_len = total - r;
     seg2     = &fb->shm->pcm.buffer[0];
-    seg2_len = q;
-    /* |       p   | */
-    /* |==q....====| */
+    seg2_len = w;
   }
 
   if (seg1_len > frames)

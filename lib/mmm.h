@@ -201,16 +201,15 @@ typedef enum {
   MMM_s16S
 } MmmAudioFormat;
 
-void mmm_pcm_set_sample_rate   (Mmm *fb, int freq);
-int  mmm_pcm_get_sample_rate   (Mmm *fb);
-void mmm_pcm_set_format        (Mmm *fb, MmmAudioFormat format);
-int  mmm_pcm_get_free_frames   (Mmm *fb);
-int  mmm_pcm_get_frame_chunk   (Mmm *fb);
-int  mmm_pcm_write             (Mmm *fb, const int8_t *data, int frames);
-int  mmm_pcm_get_queued_frames (Mmm *fb);
-int  mmm_pcm_read              (Mmm *fb, int8_t *data, int frames);
-int  mmm_pcm_bpf               (Mmm *fb);
-
-#define MMM_PCM_BUFFER_SIZE  8192
+void mmm_pcm_set_sample_rate     (Mmm *fb, int freq);
+int  mmm_pcm_get_sample_rate     (Mmm *fb);
+void mmm_pcm_set_format          (Mmm *fb, MmmAudioFormat format);
+int  mmm_pcm_get_free_frames     (Mmm *fb);
+int  mmm_pcm_get_frame_chunk     (Mmm *fb);
+int  mmm_pcm_write               (Mmm *fb, const int8_t *data, int frames);
+int  mmm_pcm_get_queued_frames   (Mmm *fb);
+int  mmm_pcm_read                (Mmm *fb, int8_t *data, int frames);
+int  mmm_pcm_bpf                 (Mmm *fb);
+int  mmm_pcm_bytes_per_frame     (Mmm *fb);
 
 #endif
