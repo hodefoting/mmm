@@ -61,10 +61,10 @@ static uint8_t *pico_fb (int width, int height)
   POKE (MMM_FLIP_STATE,  MMM_FLIP_INIT);
   POKE (MMM_PID,         (int)getpid());
 
-  POKE (MMM_DESIRED_WIDTH,  width);
-  POKE (MMM_DESIRED_HEIGHT, height);
   POKE (MMM_WIDTH,          width);
   POKE (MMM_HEIGHT,         height);
+  POKE (MMM_DESIRED_WIDTH,  width);
+  POKE (MMM_DESIRED_HEIGHT, height);
   POKE (MMM_STRIDE,         width * BPP);
   POKE (MMM_FB_OFFSET,      MMM_SIZE);
   POKE (MMM_FLIP_STATE,     MMM_FLIP_NEUTRAL);
