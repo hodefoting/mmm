@@ -441,6 +441,8 @@ static int main_sdl (const char *path, int single)
   atexit (SDL_Quit);
   host->single_app = single;
 
+  audio_init_alsa (host);
+
   while (!host_has_quit)
   {
     int got_event;
@@ -528,6 +530,7 @@ int main (int argc, char **argv)
         fprintf (stderr, "fork failed\n");
         return 0;
     }
+
   execvp (argv[1], argv+1);
   return 0;
 }

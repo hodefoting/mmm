@@ -69,4 +69,6 @@ extern int host_has_quit;
 extern int host_width;
 extern int host_height;
 
+int audio_init_alsa (Host *host);
+
 #endif

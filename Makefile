@@ -24,11 +24,11 @@ clean: clean-bins
 clean-bins:
 	rm -f mmm.sdl mmm.linux mmm.static
 
-mmm.sdl: bin/sdl*.c bin/host.c libmmm.a
-	pkg-config sdl && $(CC) -Ilib `pkg-config sdl --libs --cflags` bin/host.c bin/sdl*.c libmmm.a -o $@ || true
+mmm.sdl: bin/sdl*.c bin/host.c libmmm.a bin/alsa-audio.c
+	pkg-config sdl && $(CC) -Ilib -lpthread `pkg-config alsa sdl --libs --cflags` bin/alsa-audio.c bin/host.c bin/sdl*.c libmmm.a -o $@ || true
 
-mmm.linux: bin/host.c libmmm.a bin/linux*.c 
-	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/linux*.c -o $@
+mmm.linux: bin/host.c libmmm.a bin/linux*.c  bin/alsa-audio.c
+	$(CC) -Ilib -lpthread bin/host.c `pkg-config alsa --cflags --libs` libmmm.a bin/linux*.c bin/alsa-audio.c -o $@
 
 mmm.kobo: bin/host.c libmmm.a bin/kobo*.c  bin/linux-*.c
 	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/kobo*.c bin/linux-*.c -o $@

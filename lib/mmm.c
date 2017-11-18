@@ -621,7 +621,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
     }
 
   mmm_pcm_set_sample_rate (fb, 48000);
-  mmm_pcm_set_format (fb, MMM_s16);
+  mmm_pcm_set_format (fb, MMM_s16S);
 
   mmm_write_done (fb, 0,0, width, height);
 
@@ -840,9 +840,13 @@ void mmm_pcm_set_format      (Mmm *fb, MmmAudioFormat format)
   fb->shm->pcm.write = 1;
 }
 
-int mmm_pcm_bytes_per_frame (Mmm *fb)
+MmmAudioFormat mmm_pcm_get_format(Mmm *fb)
 {
-  MmmAudioFormat format = fb->shm->pcm.format;
+  return fb->shm->pcm.format;
+}
+
+int mmm_pcm_audio_format_bytes_per_frame (MmmAudioFormat format)
+{
   switch (format)
   {
     case MMM_f32:  return 4;
@@ -851,6 +855,12 @@ int mmm_pcm_bytes_per_frame (Mmm *fb)
     case MMM_s16S: return 4;
     default: return 1;
   }
+}
+
+int mmm_pcm_bytes_per_frame (Mmm *fb)
+{
+  MmmAudioFormat format = fb->shm->pcm.format;
+  return mmm_pcm_audio_format_bytes_per_frame (format);
 }
 
 int mmm_pcm_bpf (Mmm *fb)
@@ -1180,4 +1190,26 @@ const char *mmm_get_value (Mmm *fb, const char *key)
       return &fb->shm->values.value[i][0];
   }
   return NULL;
+}
+
+int
+mmm_pcm_audio_format_get_channels (MmmAudioFormat format)
+{
+  switch (format)
+  {
+    case MMM_s16:
+    case MMM_f32:
+      return 1;
+    case MMM_s16S:
+    case MMM_f32S:
+      return 2;
+  }
+  return 0;
+}
+
+int
+mmm_pcm_get_channels (Mmm *fb)
+{
+  if (!fb) return 0;
+  return mmm_pcm_audio_format_get_channels (mmm_pcm_get_format (fb));
 }

@@ -490,7 +490,7 @@ Host *host_linux_new (const char *path, int width, int height)
 
   if (getenv ("DISPLAY"))
   {
-    fprintf (stderr, "Abort, tried to initialize linux fb from X\n");
+    fprintf (stderr, "Abort, tried to initialize linux fb with X environment available\n");
     exit (-1);
   }
 
@@ -661,6 +661,8 @@ static int main_linux (const char *path, int single)
 
   configure_vt ();
   host->single_app = single;
+
+  audio_init_alsa (host);
 
   while (!host_has_quit)
   {

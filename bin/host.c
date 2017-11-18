@@ -230,7 +230,7 @@ int host_idle_check (void *data)
         MmmRectangle rect = {mmm_get_x (client->mmm), mmm_get_y (client->mmm),
                              mmm_get_width (client->mmm), mmm_get_height        (client->mmm)};
         host_queue_draw (host, &rect);
-        fprintf (stderr, "client might be dead.. \n");
+        // fprintf (stderr, "client might be dead.. \n");
       }
     }
   }
