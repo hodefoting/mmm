@@ -128,55 +128,49 @@ static void *alsa_audio_start(Host *host)
 
           if (mmm_pcm_get_queued_frames (client->mmm) >= c)
           do {
-            int16_t *src = &temp_audio[0];
             requested = remaining;
-
             {
               int request = remaining * factor;
-              {
-                uint8_t tempbuf[request * 8];
-                read = mmm_pcm_read (client->mmm, (void*)tempbuf, request);
+              uint8_t tempbuf[request * 8];
+              read = mmm_pcm_read (client->mmm, (void*)tempbuf, request);
 
-                if (read)
+              if (read)
+              {
+                uint8_t *tdst = (void*)dst;
+
+                if (cfloat)
                 {
                   int i;
-                  uint8_t *tdst = (void*)dst;
-                  int outpos = 0;
-
-                  if (cfloat)
+                  for (i = 0; i < read / factor; i ++)
                   {
-                    for (i = 0; i < read / factor; i ++)
+                    int j;
+                    for (j = 0; j < hchannels; j ++)
                     {
-                      int j;
-                      for (j = 0; j < hchannels; j ++)
-                      {
-                        int b;
-                        int cchan = j >= cchannels ? cchannels-1 : j; // mono to stereo
-                        float val = *(float*)(&tempbuf[((int)(i * factor)) * cbpf + cchan * cbps]);
-                        int16_t ival = val * (1<<15);
-                        *(int16_t*)(&tdst[i * hbpf + j * hbps]) += ival;
-                      }
+                      int cchan = j >= cchannels ? cchannels-1 : j; // mono to stereo
+                      float val = *(float*)(&tempbuf[((int)(i * factor)) * cbpf + cchan * cbps]);
+                      int16_t ival = val * (1<<15);
+                      *(int16_t*)(&tdst[i * hbpf + j * hbps]) += ival;
                     }
                   }
-                  else
-                  {
-                    for (i = 0; i < read / factor; i ++)
-                    {
-                      int j;
-                      for (j = 0; j < hchannels; j ++)
-                      {
-                        int b;
-                        int cchan = j >= cchannels ? cchannels-1 : j; // mono to stereo
-                        int16_t ival = *(int16_t*)(&tempbuf[((int)(i * factor)) * cbpf + cchan * cbps]);
-                        *(int16_t*)(&tdst[i * hbpf + j * hbps]) += ival;
-
-                      }
-                    }
-                  }
-
-                  remaining -= read / factor;
-                  got_data++;
                 }
+                else
+                {
+                  int i;
+                  for (i = 0; i < read / factor; i ++)
+                  {
+                    int j;
+                    for (j = 0; j < hchannels; j ++)
+                    {
+                      int cchan = j >= cchannels ? cchannels-1 : j; // mono to stereo
+                      int16_t ival = *(int16_t*)(&tempbuf[((int)(i * factor)) * cbpf + cchan * cbps]);
+                      *(int16_t*)(&tdst[i * hbpf + j * hbps]) += ival;
+
+                    }
+                  }
+                }
+
+                remaining -= read / factor;
+                got_data++;
               }
             }
 
