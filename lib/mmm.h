@@ -201,8 +201,6 @@ typedef enum {
   MMM_s16S
 } MmmAudioFormat;
 
-
-
 void mmm_pcm_set_sample_rate     (Mmm *fb, int freq);
 int  mmm_pcm_get_sample_rate     (Mmm *fb);
 int  mmm_pcm_get_channels        (Mmm *fb);
