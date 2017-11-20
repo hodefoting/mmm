@@ -1,4 +1,4 @@
-/* small test showing a basic example of driving a framebuffer
+/* small test showing a basic example of providing pcm data in a thread
  */
 #include "mmm.h"
 #include <stdio.h>
@@ -40,8 +40,8 @@ int main ()
 
     while (mmm_has_event (fb))
     {
-        const char *event = mmm_get_event (fb);
-        fprintf (stderr, "%s\n", event);
+      const char *event = mmm_get_event (fb);
+      fprintf (stderr, "%s\n", event);
     }
   }
 

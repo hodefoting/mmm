@@ -545,7 +545,7 @@ static Mmm *mmm_new_shm (const char *mmm_path, int width, int height, void *babl
 
 Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
 {
-  Mmm *fb = NULL;
+  Mmm  *fb   = NULL;
   char *path = NULL;
 
   //fprintf (stderr, "%i %s %ix%i\n", getpid(), __FUNCTION__, width, height);
@@ -621,7 +621,8 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
     }
 
   mmm_pcm_set_sample_rate (fb, 48000);
-  mmm_pcm_set_format (fb, MMM_s16S);
+  mmm_pcm_set_format (fb, MMM_s16S);    /* the mrg-host currently relies on this, since
+                                           it reuses the alsa mixing code tailor for a s16 target */
 
   mmm_write_done (fb, 0,0, width, height);
 
