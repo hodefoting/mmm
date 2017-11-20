@@ -7,10 +7,10 @@
 #include <pthread.h>
 #include <alsa/asoundlib.h>
 
-#define DESIRED_PERIOD_SIZE 1200
+#define DESIRED_PERIOD_SIZE 500
 
-static float          host_freq = 48000;
-static MmmAudioFormat host_format = MMM_s16S;
+static float  host_freq   = 48000;
+static MmmPCM host_format = MMM_s16S;
 
 static snd_pcm_t *alsa_open (char *dev, int rate, int channels)
 {
@@ -75,7 +75,7 @@ static void *alsa_audio_start(Host *host)
 
   for (;;)
   {
-    int host_channels = mmm_pcm_audio_format_get_channels (host_format);
+    int host_channels = mmm_pcm_channels (host_format);
     if (host_has_quit)
       return NULL;
 
@@ -112,12 +112,12 @@ static void *alsa_audio_start(Host *host)
           int16_t *dst = (void*) data;
           int remaining = c;
           int requested;
-          MmmAudioFormat client_format = mmm_pcm_get_format (client->mmm);
+          MmmPCM client_format = mmm_pcm_get_format (client->mmm);
 
-          int cbpf = mmm_pcm_bytes_per_frame (client->mmm);
-          int hbpf = mmm_pcm_audio_format_bytes_per_frame (host_format);
-          int cchannels = mmm_pcm_get_channels (client->mmm);
-          int hchannels = mmm_pcm_audio_format_get_channels (host_format);
+          int cbpf = mmm_pcm_bytes_per_frame (client_format);
+          int hbpf = mmm_pcm_bytes_per_frame (host_format);
+          int cchannels = mmm_pcm_channels (client_format);
+          int hchannels = mmm_pcm_channels (host_format);
           int cbps = cbpf / cchannels;
           int hbps = hbpf / hchannels;
 
@@ -200,10 +200,10 @@ int
 audio_init_alsa (Host *host)
 {
   pthread_t tid;
-  h = alsa_open("default", host_freq, mmm_pcm_audio_format_get_channels (host_format));
+  h = alsa_open("default", host_freq, mmm_pcm_channels (host_format));
   if (!h) {
     fprintf(stderr, "Unable to open ALSA device (%d channels, %d Hz), dying\n",
-            mmm_pcm_audio_format_get_channels (host_format), host_freq);
+            mmm_pcm_channels (host_format), host_freq);
     return 0;
   }
 

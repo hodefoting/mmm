@@ -40,7 +40,7 @@ int main (int argc, char **argv)
         buf[i * 2]   = sin(phase * M_PI * 2) * volume;
         buf[i * 2+1] = sin(phase * M_PI * 2) * volume;
       }
-      mmm_pcm_write (mmm, (void*)buf, count);
+      mmm_pcm_queue (mmm, (void*)buf, count);
 
       while (mmm_has_event (mmm))
       {

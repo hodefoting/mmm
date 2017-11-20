@@ -202,25 +202,6 @@ int main ()
       return -1;
     }
 
-  mmm_pcm_set_sample_rate (fb, freq);
-  mmm_pcm_set_format (fb, MMM_s16);
-
-  fprintf (stderr, "%i %i\n", mmm_pcm_get_free_frames (fb),
-                              mmm_pcm_get_frame_chunk (fb));
-
-  void *data = "asdfasdfasdfasdfasdasdfasdasdfasdff";
-  mmm_pcm_write (fb, data, 1);
-
-  fprintf (stderr, "%i %i\n", mmm_pcm_get_free_frames (fb),
-                              mmm_pcm_get_frame_chunk (fb));
-
-  mmm_pcm_write (fb, data, 10);
-
-  fprintf (stderr, "%i %i\n", mmm_pcm_get_free_frames (fb),
-                              mmm_pcm_get_frame_chunk (fb));
-
-  mmm_pcm_write (fb, data, 22);
-
   //mmm_eink_mono (fb);
 
   //mmm_set_size (fb, 256, 128);
@@ -258,7 +239,6 @@ int main ()
     for (i = 96; i < 128; i+=2)
       {
         fill_render (fb, frag_ripple_interference, i);
-        mmm_pcm_write (fb, data, 17);
         event_handling (fb);
       }
 
@@ -270,14 +250,12 @@ int main ()
     for (i = 0; i < 32; i+=1)
       {
         fill_render (fb, frag_hack2, 64-i);
-        mmm_pcm_write (fb, data, 7);
         event_handling (fb);
       }
 
     for (i = 0; i < 32; i+=1)
       {
         fill_render (fb, frag_hack, i);
-        mmm_pcm_write (fb, data, 17);
         event_handling (fb);
       }
 
@@ -286,13 +264,11 @@ int main ()
     for (i = 0; i < 74; i+=1)
     {
         fill_render (fb, frag_ripple, i * 1000);
-        mmm_pcm_write (fb, data, 11);
         event_handling (fb);
     }
     for (i = 74; i >0; i-=2)
     {
         fill_render (fb, frag_ripple, i * 1000);
-        mmm_pcm_write (fb, data, 5);
         event_handling (fb);
     }
     ghostbuster (fb);

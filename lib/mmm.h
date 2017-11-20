@@ -94,6 +94,9 @@ int            mmm_get_z                (Mmm *fb);
 int            mmm_get_width            (Mmm *fb);
 int            mmm_get_height           (Mmm *fb);
 
+/* check if the size has changed */
+int  mmm_client_check_size        (Mmm *fb, int *width, int *height);
+
 /* Get the native babl_format of a buffer, requires babl
  * to be compiled in.
  */
@@ -136,14 +139,81 @@ void           mmm_write_done       (Mmm *fb,
                                      int damage_width, int damage_height);
 
 /* event queue:  */
-void           mmm_add_event        (Mmm *fb, const char *event);
 int            mmm_has_event        (Mmm *fb);
 const char    *mmm_get_event        (Mmm *fb);
+/* host-side - for queuing the events */
+void           mmm_add_event        (Mmm *fb, const char *event);
+
+/* warp the _mouse_ cursor to given coordinates; doesn't do much on a
+ * touch-screen
+ */
+void           mmm_warp_cursor      (Mmm *fb, int x, int y);
+
+/* a clock source, counting since startup in microseconds.
+ */
+long           mmm_ticks       (void);
 
 /* message queue:  */
 void           mmm_add_message      (Mmm *fb, const char *message);
 int            mmm_has_message      (Mmm *fb);
 const char    *mmm_get_message      (Mmm *fb);
+
+
+/*** audio ***/
+
+typedef enum {
+  MMM_f32,
+  MMM_f32S,
+  MMM_s16,
+  MMM_s16S
+} MmmPCM;
+
+/*  returns how many bytes each full chunked frame of samples for a given time
+ *  takes for a given MmmPCM format.
+ */
+int  mmm_pcm_bytes_per_frame      (MmmPCM format);
+
+/*  returns the number of channels for a given PCM format.
+ */
+int  mmm_pcm_channels             (MmmPCM format);
+
+/*  configure the pcm data format
+ */
+void mmm_pcm_set_format           (Mmm *fb, MmmPCM format);
+/*  and sample-rate, note that running at the default 48000 - will avoid
+ *  the as of this writing slightly glitchy internal resampler.
+ */
+void mmm_pcm_set_sample_rate      (Mmm *fb, int freq);
+
+/*  query current pcm configuration of a client
+ */
+int  mmm_pcm_get_sample_rate      (Mmm *fb);
+MmmPCM mmm_pcm_get_format         (Mmm *fb);
+
+/*   queue the given number of frames of (interleaved) PCM data
+ */
+int  mmm_pcm_queue                (Mmm *fb, const int8_t *data, int frames);
+
+/* mmm_pcm_get_frame_chunk:
+ *   reports how many frames we should write to keep up with real-time
+ *   typically this will return how many frames are missing from having queued
+ *   a period, ~1000 frames of audio.
+ */
+int  mmm_pcm_get_frame_chunk      (Mmm *fb);
+
+/* mmm_pcm_get_queued_frames:
+ *   report how many frames are currently queued
+ */
+int  mmm_pcm_get_queued_frames    (Mmm *fb);
+
+/* mmm_pcm_get_free_frames:
+ *   how many more frames can be maximally queued currently
+ */
+int  mmm_pcm_get_free_frames      (Mmm *fb);
+
+/* for use by compositor/hosts to consume queued pcm data: */
+int  mmm_pcm_read                 (Mmm *fb, int8_t *data, int frames);
+
 
 /****** the following are for use by the compositor implementation *****/
 
@@ -174,46 +244,11 @@ const char    *mmm_get_path (Mmm *fb);
 
 /* check if the dimensions have changed */
 int            mmm_host_check_size  (Mmm *fb, int *width, int *height);
-
-/* and a corresponding call for the client side  */
-int            mmm_client_check_size (Mmm *fb, int *width, int *height);
-
 void           mmm_host_get_size (Mmm *fb, int *width, int *height);
 void           mmm_host_set_size (Mmm *fb, int width, int height);
 
-/* warp the _mouse_ cursor to given coordinates; doesn't do much on a
- * touch-screen
- */
-void           mmm_warp_cursor (Mmm *fb, int x, int y);
-
-/* a clock source, counting since startup in microseconds.
- */
-long           mmm_ticks       (void);
 
 long           mmm_client_pid  (Mmm *fb);
 
-/*** audio ***/
-
-typedef enum {
-  MMM_f32,
-  MMM_f32S,
-  MMM_s16,
-  MMM_s16S
-} MmmAudioFormat;
-
-void mmm_pcm_set_sample_rate     (Mmm *fb, int freq);
-int  mmm_pcm_get_sample_rate     (Mmm *fb);
-int  mmm_pcm_get_channels        (Mmm *fb);
-int  mmm_pcm_audio_format_get_channels (MmmAudioFormat format);
-void mmm_pcm_set_format          (Mmm *fb, MmmAudioFormat format);
-MmmAudioFormat mmm_pcm_get_format(Mmm *fb);
-int  mmm_pcm_get_free_frames     (Mmm *fb);
-int  mmm_pcm_get_frame_chunk     (Mmm *fb);
-int  mmm_pcm_write               (Mmm *fb, const int8_t *data, int frames);
-int  mmm_pcm_get_queued_frames   (Mmm *fb);
-int  mmm_pcm_read                (Mmm *fb, int8_t *data, int frames);
-int  mmm_pcm_bpf                 (Mmm *fb);
-int  mmm_pcm_bytes_per_frame     (Mmm *fb);
-int  mmm_pcm_audio_format_bytes_per_frame (MmmAudioFormat format);
 
 #endif

@@ -24,6 +24,8 @@
 #define MMM_DESIRED_WIDTH   0x5d8
 #define MMM_DESIRED_HEIGHT  0x5dc
 
+#define MMM_DAMAGE_WIDTH    0x5e8
+#define MMM_DAMAGE_HEIGHT   0x5ec
 
 #define MMM_STRIDE          0x5b8
 #define MMM_FB_OFFSET       0x5bc
@@ -48,7 +50,11 @@ static uint8_t *pico_fb (int width, int height)
   int size = MMM_SIZE + width * height * BPP;
   const char *mmm_path = getenv ("MMM_PATH");
   if (!mmm_path)
+  {
+    fprintf (stderr, "this minimalistic demo requires to be launched as the argument of an mmm host being launched; for example $ mmm.sdl ./raw-client\n");
+    /* copy over the fork launcher from lib? */
     return NULL;
+  }
   sprintf (path, "%s/fb.XXXXXX", mmm_path);
   fd = mkstemp (path);
   pwrite (fd, "", 1, size);
@@ -59,17 +65,18 @@ static uint8_t *pico_fb (int width, int height)
   strcpy ((void*)ram_base + MMM_TITLE, "foo");
 
   POKE (MMM_FLIP_STATE,  MMM_FLIP_INIT);
-  POKE (MMM_PID,         (int)getpid());
+  POKE (MMM_PID,         (uint32_t)getpid());
 
   POKE (MMM_WIDTH,          width);
   POKE (MMM_HEIGHT,         height);
   POKE (MMM_DESIRED_WIDTH,  width);
   POKE (MMM_DESIRED_HEIGHT, height);
   POKE (MMM_STRIDE,         width * BPP);
-  POKE (MMM_FB_OFFSET,      MMM_SIZE);
+
+  POKE (MMM_FB_OFFSET,      MMM_SIZE); /* we write where to find out fb */
   POKE (MMM_FLIP_STATE,     MMM_FLIP_NEUTRAL);
 
-  return (uint8_t*) & PEEK(MMM_SIZE);
+  return (uint8_t*) & (PEEK(MMM_SIZE));
 }
 
 static void    pico_exit (void)
@@ -89,6 +96,13 @@ static void wait_sync (void)
 
 static void flip_buffer (void)
 {
+  /* we need to indicate damage to the buffers to
+   * get auto updates with hosts that are smart about updates
+   */
+  POKE (MMM_DAMAGE_WIDTH,  PEEK (MMM_WIDTH));
+  POKE (MMM_DAMAGE_HEIGHT, PEEK (MMM_HEIGHT));
+
+  /* indicate that we're ready for a flip */
   POKE (MMM_FLIP_STATE, MMM_FLIP_WAIT_FLIP);
 }
 

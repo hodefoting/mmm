@@ -39,6 +39,16 @@ typedef enum {
   MMM_DRAWING,
   MMM_WAIT_FLIP,
   MMM_FLIPPING,
+  MMM_NEUTRAL0,
+  MMM_NEUTRAL1,
+  MMM_DRAWING0,
+  MMM_DRAWING1,
+  MMM_WAIT_FLIP0,
+  MMM_WAIT_FLIP1,
+  MMM_FLIPPING0,
+  MMM_FLIPPING1,
+
+
 } MmmFlipState;
 
 typedef struct _MmmShm MmmShm;
@@ -127,8 +137,9 @@ typedef struct MmmValues {
 
 typedef struct MmmPcm {
   MmmBlock       block;
-  MmmAudioFormat format;                        /* C */
+  MmmPCM         format;                        /* C */
   int            sample_rate;                   /* C */
+  MmmPCM         host_format;                   /* H */
   int            host_sample_rate;              /* H */
   int            read;                          /* H */
   int            write;                         /* C */
@@ -834,19 +845,19 @@ int mmm_pcm_get_sample_rate (Mmm *fb)
   return fb->shm->pcm.sample_rate;
 }
 
-void mmm_pcm_set_format      (Mmm *fb, MmmAudioFormat format)
+void mmm_pcm_set_format      (Mmm *fb, MmmPCM format)
 {
   fb->shm->pcm.format = format;
   fb->shm->pcm.read = 0;
   fb->shm->pcm.write = 1;
 }
 
-MmmAudioFormat mmm_pcm_get_format(Mmm *fb)
+MmmPCM mmm_pcm_get_format (Mmm *fb)
 {
   return fb->shm->pcm.format;
 }
 
-int mmm_pcm_audio_format_bytes_per_frame (MmmAudioFormat format)
+int mmm_pcm_bytes_per_frame (MmmPCM format)
 {
   switch (format)
   {
@@ -858,20 +869,9 @@ int mmm_pcm_audio_format_bytes_per_frame (MmmAudioFormat format)
   }
 }
 
-int mmm_pcm_bytes_per_frame (Mmm *fb)
-{
-  MmmAudioFormat format = fb->shm->pcm.format;
-  return mmm_pcm_audio_format_bytes_per_frame (format);
-}
-
-int mmm_pcm_bpf (Mmm *fb)
-{
-  return mmm_pcm_bytes_per_frame (fb);
-}
-
 static inline int mmm_pcm_frame_count (Mmm *fb)
 {
-  return (MMM_AUDIO_BUFFER_SIZE / mmm_pcm_bytes_per_frame (fb));
+  return (MMM_AUDIO_BUFFER_SIZE / mmm_pcm_bytes_per_frame (mmm_pcm_get_format (fb)));
 }
 
 int  mmm_pcm_get_queued_frames (Mmm *fb)
@@ -903,24 +903,25 @@ int  mmm_pcm_get_free_frames (Mmm *fb)
 
 int  mmm_pcm_get_frame_chunk (Mmm *fb)
 {
-  int total = mmm_pcm_frame_count (fb);
   int free = mmm_pcm_get_free_frames (fb);
+  int queued = mmm_pcm_get_queued_frames (fb);
+  int ret = 0;
 
-  return free - 2;
-  int ret = total / 2;
-  if (ret > free - 2)
+  if (queued > 1024)
+    ret = 0;
+  else
+    ret = 1024 - queued;
+  if (ret > free -2)
     ret = free - 2;
   return ret;
 }
 
-//static long frame_no = 0;
-
-int mmm_pcm_write (Mmm *fb, const int8_t *data, int frames)
+int mmm_pcm_queue (Mmm *fb, const int8_t *data, int frames)
 {
   int total = mmm_pcm_frame_count (fb);
   uint8_t *seg1, *seg2 = NULL;
   int      seg1_len, seg2_len = 0;
-  int      bpf = mmm_pcm_bytes_per_frame (fb); /* bytes per frame */
+  int      bpf = mmm_pcm_bytes_per_frame (mmm_pcm_get_format (fb)); /* bytes per frame */
 
   int w = fb->shm->pcm.write;
   int r = fb->shm->pcm.read;
@@ -955,7 +956,7 @@ int mmm_pcm_write (Mmm *fb, const int8_t *data, int frames)
   {
     /* |  r        | */
     /* |..===w.....| */
-    
+
     seg1     = &fb->shm->pcm.buffer[ w * bpf];
     seg1_len = total - w;
     seg2     = NULL;
@@ -965,7 +966,7 @@ int mmm_pcm_write (Mmm *fb, const int8_t *data, int frames)
   {
     /* |  r        | */
     /* |..===w.....| */
-    
+
     seg1     = &fb->shm->pcm.buffer[ w * bpf];
     seg1_len = total - w;
     seg2     = &fb->shm->pcm.buffer[0];
@@ -1025,7 +1026,7 @@ int  mmm_pcm_read (Mmm *fb, int8_t *data, int frames)
   int      total = mmm_pcm_frame_count (fb);
   uint8_t *seg1, *seg2 = NULL;
   int      seg1_len, seg2_len = 0;
-  int      bpf = mmm_pcm_bytes_per_frame (fb); /* bytes per frame */
+  int      bpf = mmm_pcm_bytes_per_frame (mmm_pcm_get_format (fb)); /* bytes per frame */
   int      ret = 0;
 
   int w = fb->shm->pcm.write;
@@ -1194,7 +1195,7 @@ const char *mmm_get_value (Mmm *fb, const char *key)
 }
 
 int
-mmm_pcm_audio_format_get_channels (MmmAudioFormat format)
+mmm_pcm_channels (MmmPCM format)
 {
   switch (format)
   {
@@ -1206,11 +1207,4 @@ mmm_pcm_audio_format_get_channels (MmmAudioFormat format)
       return 2;
   }
   return 0;
-}
-
-int
-mmm_pcm_get_channels (Mmm *fb)
-{
-  if (!fb) return 0;
-  return mmm_pcm_audio_format_get_channels (mmm_pcm_get_format (fb));
 }
