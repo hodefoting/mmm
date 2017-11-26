@@ -95,7 +95,7 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       end_scan = host->dirty_ymax;
     start_scan -= y;
     end_scan -= y;
-    
+
     copy_count = host->width - x;
     if (copy_count > width)
     {
@@ -144,9 +144,9 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       if (baseflags & SDL_NOFRAME)
         baseflags -= SDL_NOFRAME;
     }
-    
-    if ( (cwidth  && cwidth  != host->width) ||
-         (cheight && cheight != host->height) ||
+    #if 1
+    if ( (cwidth  && (cwidth  != host->width)) ||
+         (cheight && (cheight != host->height)) ||
          (old_baseflags != baseflags))
     {
       host->width = cwidth;
@@ -156,6 +156,7 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
                                            baseflags | SDL_RESIZABLE);
       old_baseflags = baseflags;
     }
+#endif
   }
 }
 
@@ -411,16 +412,18 @@ static int sdl_check_events (Host *host)
         host_sdl->screen = SDL_SetVideoMode (event.resize.w,
                                              event.resize.h,32,
                                              baseflags | SDL_RESIZABLE);
-        host->width = event.resize.w;
+
+        host->width  = event.resize.w;
         host->height = event.resize.h;
         host->stride = host->width * host->bpp;
 
-        fprintf (stderr, "%ix%i\n", event.resize.w, event.resize.h);
-#if 1
-    //    if (host->single_app && host->focused)
+        if (host->single_app && host->focused)
           mmm_host_set_size (host->focused->mmm,
                              host->width, host->height);
-#endif
+
+        usleep (90000); /* XXX : hack - something is racy about resizing
+                           this kind of fixes it - but makes still results
+                           in really botched resize */
         break;
     }
     got_event = 1;
