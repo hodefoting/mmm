@@ -426,8 +426,12 @@ mmm_remap (Mmm *fb)
 #if 0
         fb->shm = mremap (fb->shm, fb->mapped_size, size, MREMAP_MAYMOVE);
 #else
-        munmap (fb->shm, fb->mapped_size);
-        fb->shm = mmap (NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fd, 0);
+        {
+          void *oldshm = fb->shm;
+          fb->shm = NULL;
+          munmap (oldshm, fb->mapped_size);
+          fb->shm = mmap (NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fd, 0);
+        }
 #endif
         if (!fb->shm)
           fprintf (stderr, "mmm failed mmaping client\n");
@@ -500,7 +504,7 @@ void mmm_set_size (Mmm *fb, int width, int height)
 {
   while ((fb->shm->fb.flip_state != MMM_NEUTRAL) &&
          (fb->shm->fb.flip_state != MMM_INITIALIZING))
-    usleep (500);
+    usleep (50);
   fb->shm->fb.flip_state = MMM_INITIALIZING;
 
   fb->shm->fb.width  = fb->shm->fb.desired_width  = width;
@@ -842,6 +846,7 @@ void mmm_pcm_set_sample_rate (Mmm *fb, int freq)
 
 int mmm_pcm_get_sample_rate (Mmm *fb)
 {
+  while (!fb->shm) usleep (50);
   return fb->shm->pcm.sample_rate;
 }
 
@@ -854,6 +859,7 @@ void mmm_pcm_set_format      (Mmm *fb, MmmPCM format)
 
 MmmPCM mmm_pcm_get_format (Mmm *fb)
 {
+  while (!fb->shm) usleep (50);
   return fb->shm->pcm.format;
 }
 
@@ -876,8 +882,10 @@ static inline int mmm_pcm_frame_count (Mmm *fb)
 
 int  mmm_pcm_get_queued_frames (Mmm *fb)
 {
-  int w = fb->shm->pcm.write;
-  int p = fb->shm->pcm.read;
+  int w, p;
+  while (!fb->shm) usleep (50);
+  w = fb->shm->pcm.write;
+  p = fb->shm->pcm.read;
 
   if (p == w)
     /* |    p      | legend: .. played/unused */
