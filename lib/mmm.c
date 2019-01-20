@@ -582,6 +582,7 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
     {
       case 0: /* child */
         execlp ("mmm", "mmm", "-p", mmm_path, NULL);
+        break;
       case -1:
         fprintf (stderr, "fork failed\n");
         return 0;
