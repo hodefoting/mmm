@@ -202,7 +202,7 @@ audio_init_alsa (Host *host)
   pthread_t tid;
   h = alsa_open("default", host_freq, mmm_pcm_channels (host_format));
   if (!h) {
-    fprintf(stderr, "Unable to open ALSA device (%d channels, %d Hz), dying\n",
+    fprintf(stderr, "Unable to open ALSA device (%d channels, %.0f Hz), dying\n",
             mmm_pcm_channels (host_format), host_freq);
     return 0;
   }
