@@ -28,7 +28,7 @@ mmm.sdl: bin/sdl*.c bin/host.c libmmm.a bin/alsa-audio.c
 	pkg-config sdl && $(CC) -Ilib -lpthread `pkg-config alsa sdl --libs --cflags` bin/alsa-audio.c bin/host.c bin/sdl*.c libmmm.a -o $@ || true
 
 mmm.linux: bin/host.c libmmm.a bin/linux*.c  bin/alsa-audio.c
-	$(CC) -Ilib -lpthread bin/host.c `pkg-config alsa --cflags --libs` libmmm.a bin/linux*.c bin/alsa-audio.c -o $@
+	$(CC) -Ilib -lpthread bin/host.c `pkg-config alsa --cflags` libmmm.a bin/linux*.c bin/alsa-audio.c `pkg-config alsa --libs` -lpthread -lm -o $@
 
 mmm.kobo: bin/host.c libmmm.a bin/kobo*.c  bin/linux-*.c
 	$(CC) -Ilib -lpthread bin/host.c libmmm.a bin/kobo*.c bin/linux-*.c -o $@
