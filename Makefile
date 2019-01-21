@@ -25,7 +25,7 @@ clean-bins:
 	rm -f mmm.sdl mmm.linux mmm.static
 
 mmm.sdl: bin/sdl*.c bin/host.c libmmm.a bin/alsa-audio.c
-	pkg-config sdl && $(CC) -Ilib -lpthread `pkg-config alsa sdl --libs --cflags` bin/alsa-audio.c bin/host.c bin/sdl*.c libmmm.a -o $@ || true
+	pkg-config sdl && $(CC) -Ilib -lpthread `pkg-config alsa sdl --cflags` bin/alsa-audio.c bin/host.c bin/sdl*.c `pkg-config alsa sdl --libs` -lpthread -lm libmmm.a -o $@ || true
 
 mmm.linux: bin/host.c libmmm.a bin/linux*.c  bin/alsa-audio.c
 	$(CC) -Ilib -lpthread bin/host.c `pkg-config alsa --cflags` libmmm.a bin/linux*.c bin/alsa-audio.c `pkg-config alsa --libs` -lpthread -lm -o $@
