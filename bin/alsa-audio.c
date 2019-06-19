@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <alsa/asoundlib.h>
 
-#define DESIRED_PERIOD_SIZE 500
+#define DESIRED_PERIOD_SIZE 100
 
 static float  host_freq   = 48000;
 static MmmPCM host_format = MMM_s16S;
