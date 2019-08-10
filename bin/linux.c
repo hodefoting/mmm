@@ -81,6 +81,7 @@ static int host_add_evsource (Host *host, EvSource *source)
   {
     host_linux->evsource[host_linux->evsource_count++] = source;
   }
+  return 0;
 }
 
 int is_active (Host *host)
@@ -611,7 +612,7 @@ Host *host_linux_new (const char *path, int width, int height)
   return host;
 }
 
-static int
+static inline int
 mmfb_unichar_to_utf8 (unsigned int  ch,
                       unsigned char*dest)
 {
@@ -672,7 +673,7 @@ static int main_linux (const char *path, int single)
     host_idle_check (host);
     host_monitor_dir (host);
 
-    if (got_event || (host_is_dirty (host)) && host_linux->vt_active)
+    if (got_event || (host_is_dirty (host) && host_linux->vt_active))
     {
       int warp = 0;
       double px, py;

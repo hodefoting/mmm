@@ -106,7 +106,6 @@ void validate_client (Host *host, const char *client_name)
       if (mmm_get_x (client->mmm) == 0 &&
           mmm_get_y (client->mmm) == 0)
       {
-        static int pos = 0;
         int width  = mmm_get_width (client->mmm);
         int height = mmm_get_width (client->mmm);
         fprintf (stderr, "em\n");

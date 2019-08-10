@@ -95,7 +95,7 @@ static void *alsa_audio_start(Host *host)
 
        {
         MmmList *l;
-        int16_t temp_audio[81920 * 2];
+        //int16_t temp_audio[81920 * 2];
 
         for (int i = 0; i < c * host_channels; i ++)
         {
@@ -107,7 +107,6 @@ static void *alsa_audio_start(Host *host)
         {
           Client *client = l->data;
           float factor = mmm_pcm_get_sample_rate (client->mmm) * 1.0 / host_freq;
-          int i;
           int read = 0;
           int16_t *dst = (void*) data;
           int remaining = c;

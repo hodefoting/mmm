@@ -483,7 +483,8 @@ static int main_sdl (const char *path, int single)
           SDL_WM_SetCaption (title, "mmm");
         }
       }
-      usleep (5000);
+      if (!got_event)
+        usleep (5000);
     }
   }
 
