@@ -409,8 +409,9 @@ static int sdl_check_events (Host *host)
         }
         break;
       case SDL_VIDEORESIZE:
+        event.resize.h -= 30;
         host_sdl->screen = SDL_SetVideoMode (event.resize.w,
-                                             event.resize.h,32,
+                                             event.resize.h, 32,
                                              baseflags | SDL_RESIZABLE);
 
         host->width  = event.resize.w;
@@ -421,7 +422,7 @@ static int sdl_check_events (Host *host)
           mmm_host_set_size (host->focused->mmm,
                              host->width, host->height);
 
-        usleep (90000); /* XXX : hack - something is racy about resizing
+        usleep (190000); /* XXX : hack - something is racy about resizing
                            this kind of fixes it - but makes still results
                            in really botched resize */
         break;

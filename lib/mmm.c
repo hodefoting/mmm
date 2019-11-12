@@ -178,9 +178,9 @@ struct Mmm_
 
   int          compositor_side;
 
-  MmmBlock    *pcm;
-  MmmBlock    *events;
-  MmmBlock    *messages;
+  MmmPcm      *pcm;
+  MmmEvents   *events;
+  MmmMessages *messages;
 };
 
 #define U64_CONSTANT(str) (*((uint64_t*)str))
@@ -247,7 +247,6 @@ mmm_get_buffer_write (Mmm *fb, int *width, int *height, int *stride,
   mmm_wait_neutral (fb);
 
   // XXX: do a client check size?
-
   //fprintf (stderr, "[%i]", fb->bpp);
 
   mmm_set_state (fb, MMM_DRAWING);
@@ -290,7 +289,7 @@ mmm_write_done (Mmm *fb, int x, int y, int width, int height)
   {
     fb->shm->fb.damage_x = 0;
     fb->shm->fb.damage_y = 0;
-    fb->shm->fb.damage_width = fb->shm->fb.width;
+    fb->shm->fb.damage_width  = fb->shm->fb.width;
     fb->shm->fb.damage_height = fb->shm->fb.height;
   }
   else
@@ -469,8 +468,8 @@ int
 mmm_host_check_size (Mmm *fb, int *width, int *height)
 {
   int ret = 0;
-  if (fb->width != fb->shm->fb.width ||
-      fb->height != fb->shm->fb.height)
+  if ((fb->width != fb->shm->fb.width) ||
+      (fb->height != fb->shm->fb.height))
     {
       mmm_remap (fb);
       ret = 1;
@@ -487,8 +486,8 @@ int
 mmm_client_check_size (Mmm *fb, int *width, int *height)
 {
   int ret = 0;
-  if (fb->shm->fb.desired_width  != fb->shm->fb.width ||
-      fb->shm->fb.desired_height != fb->shm->fb.height)
+  if ((fb->shm->fb.desired_width  != fb->shm->fb.width) ||
+      (fb->shm->fb.desired_height != fb->shm->fb.height))
     {
       mmm_set_size (fb, fb->shm->fb.desired_width, fb->shm->fb.desired_height);
       ret = 1;
@@ -732,14 +731,19 @@ static Mmm *mmm_new_shm (const char *mmm_path, int width, int height, void *babl
   fb->shm = mmap (NULL, fb->mapped_size, PROT_READ | PROT_WRITE, MAP_SHARED, fb->fd, 0);
   mmm_init_header (fb->shm);
 
-  fb->shm->fb.desired_width = fb->width;
+  fb->shm->fb.desired_width  = fb->width;
   fb->shm->fb.desired_height = fb->height;
-  fb->shm->fb.width = fb->width;
-  fb->shm->fb.stride = fb->stride;
-  fb->shm->fb.height = fb->height;
-  fb->shm->fb.flip_state = MMM_NEUTRAL;
-  fb->shm->header.pid = getpid ();
+  fb->shm->fb.width          = fb->width;
+  fb->shm->fb.stride         = fb->stride;
+  fb->shm->fb.height         = fb->height;
+  fb->shm->fb.flip_state     = MMM_NEUTRAL;
+  fb->shm->header.pid        = getpid ();
   mmm_remap (fb);
+
+  /* do a lookup, or make it even happen on-demand? */
+  fb->pcm = &fb->shm->pcm;
+  fb->events = &fb->shm->events;
+  fb->messages = &fb->shm->messages;
 
   return fb;
 }

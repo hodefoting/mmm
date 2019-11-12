@@ -6,7 +6,8 @@
 
 static long frames = 1;
 static float hz    = 440;
-static float volume = 0.5;
+#define VOLUME 0.3
+static float volume = VOLUME;
 
 int main (int argc, char **argv)
 {
@@ -52,7 +53,7 @@ int main (int argc, char **argv)
         if (!strcmp (event, "down")) // octave down
           hz /= 2;
         if (!strcmp (event, "space")) // toggle tone
-          volume = volume == 0.0f ? 0.5f : 0.0f;
+          volume = volume == 0.0f ? VOLUME : 0.0f;
       }
     }
     else

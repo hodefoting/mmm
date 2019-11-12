@@ -129,10 +129,10 @@ unsigned char *mmm_get_buffer_write (Mmm *fb,
  * @damage_height: height bound of damaged pixels, or -1 for all
  *
  * Reports that writing to the buffer is complete, if possible provide the
- * bounding box of the changed region - as eink devices; as well as
- * compositing window managers want to know this information to do efficient
- * updates. width/height of -1, -1 reports that any pixel in the buffer might
- * have changed.
+ * bounding box of the changed region - as eink devices, serial protocol
+ * framebuffers and compositing window managers want to know this information
+ * to do efficient updates. width/height of -1, -1 reports that any pixel in
+ * the buffer might have changed.
  */
 void           mmm_write_done       (Mmm *fb,
                                      int damage_x, int damage_y,
@@ -246,7 +246,6 @@ const char    *mmm_get_path (Mmm *fb);
 int            mmm_host_check_size  (Mmm *fb, int *width, int *height);
 void           mmm_host_get_size (Mmm *fb, int *width, int *height);
 void           mmm_host_set_size (Mmm *fb, int width, int height);
-
 
 long           mmm_client_pid  (Mmm *fb);
 

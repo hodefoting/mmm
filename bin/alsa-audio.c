@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <alsa/asoundlib.h>
 
-#define DESIRED_PERIOD_SIZE 100
+#define DESIRED_PERIOD_SIZE 200
 
 static float  host_freq   = 48000;
 static MmmPCM host_format = MMM_s16S;
@@ -62,6 +62,8 @@ static snd_pcm_t *alsa_open (char *dev, int rate, int channels)
 
 
 static  snd_pcm_t *h = NULL;
+
+
 static void *alsa_audio_start(Host *host)
 {
 //  Lyd *lyd = aux;
@@ -73,6 +75,8 @@ static void *alsa_audio_start(Host *host)
    * no data available.
    */
 
+
+
   for (;;)
   {
     int got_data = 0;
@@ -80,15 +84,22 @@ static void *alsa_audio_start(Host *host)
     if (host_has_quit)
       return NULL;
 
-    c = snd_pcm_wait(h, 1000);
+    if (h)
+    {
+      c = snd_pcm_wait(h, 1000);
 
-    if (c >= 0)
-       c = snd_pcm_avail_update(h);
+      if (c >= 0)
+         c = snd_pcm_avail_update(h);
 
-    if (c > 2000) c = 2000; // should use max mmm buffer sizes
+      if (c > 2000) c = 2000; // should use max mmm buffer sizes
 
-    if (c == -EPIPE)
-      snd_pcm_prepare(h);
+      if (c == -EPIPE)
+        snd_pcm_prepare(h);
+    }
+    else
+    {
+       c = 1000;
+    }
 
     if (c > 0)
     {
@@ -179,13 +190,28 @@ static void *alsa_audio_start(Host *host)
 /* XXX : can we turn this off when we haven't had writes for a while? to save power if possible? */
       if (got_data)
       {
+
+        if (!h)
+        {
+          h = alsa_open("default", host_freq, mmm_pcm_channels (host_format));
+          if (!h)
+          {
+            fprintf(stderr, "MMM: unable to open ALSA device (%d channels, %.0f Hz), dying\n",
+            mmm_pcm_channels (host_format), host_freq);
+           return 0;
+          }
+          snd_pcm_prepare(h);
+          snd_pcm_wait(h, c);
+        }
+
         c = snd_pcm_writei(h, data, c);
         if (c < 0)
           c = snd_pcm_recover (h, c, 0);
       }
       else
       {
-        usleep (40000);
+        // TODO : shut down audio when all clients are silent?
+        usleep (10000);
       }
     } else {
       if (getenv("LYD_FATAL_UNDERRUNS"))
@@ -206,12 +232,6 @@ int
 audio_init_alsa (Host *host)
 {
   pthread_t tid;
-  h = alsa_open("default", host_freq, mmm_pcm_channels (host_format));
-  if (!h) {
-    fprintf(stderr, "Unable to open ALSA device (%d channels, %.0f Hz), dying\n",
-            mmm_pcm_channels (host_format), host_freq);
-    return 0;
-  }
 
   pthread_create(&tid, NULL, (void*)alsa_audio_start, host);
   return 1;
