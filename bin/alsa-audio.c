@@ -75,6 +75,7 @@ static void *alsa_audio_start(Host *host)
 
   for (;;)
   {
+    int got_data = 0;
     int host_channels = mmm_pcm_channels (host_format);
     if (host_has_quit)
       return NULL;
@@ -89,7 +90,8 @@ static void *alsa_audio_start(Host *host)
     if (c == -EPIPE)
       snd_pcm_prepare(h);
 
-    if (c > 0){
+    if (c > 0)
+    {
        if (host_has_quit)
          return NULL;
 
@@ -101,7 +103,6 @@ static void *alsa_audio_start(Host *host)
         {
           data[i] = 0;
         }
-        int got_data = 0;
 
         for (l = host->clients; l; l = l->next)
         {
@@ -172,15 +173,20 @@ static void *alsa_audio_start(Host *host)
                 got_data++;
               }
             }
-
-
           } while ((read == requested) && remaining > 0);
         }
       }
 /* XXX : can we turn this off when we haven't had writes for a while? to save power if possible? */
-      c = snd_pcm_writei(h, data, c);
-      if (c < 0)
-        c = snd_pcm_recover (h, c, 0);
+      if (got_data)
+      {
+        c = snd_pcm_writei(h, data, c);
+        if (c < 0)
+          c = snd_pcm_recover (h, c, 0);
+      }
+      else
+      {
+        usleep (40000);
+      }
     } else {
       if (getenv("LYD_FATAL_UNDERRUNS"))
         {
@@ -188,7 +194,8 @@ static void *alsa_audio_start(Host *host)
           //printf ("%i", lyd->active);
           exit(0);
         }
-      fprintf (stderr, "alsa underun\n");
+      if (got_data)
+        fprintf (stderr, "alsa underun\n");
       //exit(0);
     }
   }
