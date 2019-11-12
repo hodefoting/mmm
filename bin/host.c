@@ -108,12 +108,10 @@ void validate_client (Host *host, const char *client_name)
       {
         int width  = mmm_get_width (client->mmm);
         int height = mmm_get_width (client->mmm);
-        fprintf (stderr, "em\n");
 
         if (width < 0 || height < 0)
         {
           mmm_host_set_size (client->mmm, host->width, host->height);
-          fprintf (stderr, "embiggening!!!!\n");
           mmm_set_x (client->mmm, 0);
           mmm_set_y (client->mmm, 0);
         }
