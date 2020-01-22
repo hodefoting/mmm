@@ -8,7 +8,6 @@ examples = [
  { 'name': 'fragment-full', },
  { 'name': 'nano-test2', },
  { 'name': 'raw-client', },
- { 'name': 'ctx', },
  { 'name': 'raw-client-tool', },
 ]
 

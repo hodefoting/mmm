@@ -9,10 +9,12 @@ static float hz    = 440;
 #define VOLUME 0.3
 static float volume = VOLUME;
 
+static int sample_rate = 48000;
+
 int main (int argc, char **argv)
 {
   Mmm *mmm = mmm_new (200, 100, 0, NULL);
-  mmm_pcm_set_sample_rate (mmm, 48000);
+  mmm_pcm_set_sample_rate (mmm, sample_rate);
   mmm_pcm_set_format (mmm, MMM_f32S);
   mmm_set_title (mmm, "mmm audio experiment");
   int quit = 0;
@@ -34,7 +36,7 @@ int main (int argc, char **argv)
         float phase;
         int   phasei;
         frames++;
-        phase = frames / (44100.0 / hz);
+        phase = frames / (1.0 * sample_rate / hz);
         phasei = phase;
         phase = phase - phasei;
 

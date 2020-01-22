@@ -1,2 +1,3 @@
 
 option('sdl1',          type: 'feature', value: 'auto')
+option('sdl2',          type: 'feature', value: 'auto')

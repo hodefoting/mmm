@@ -70,6 +70,9 @@ sdl1     = dependency('sdl',         version: '>=1.2.0',
   required: get_option('sdl1')
 )
 
+sdl2     = dependency('sdl2',        version: '>=2.0.4',
+  required: get_option('sdl2')
+)
 
 rootInclude = include_directories('.')
 

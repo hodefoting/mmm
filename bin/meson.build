@@ -1,11 +1,20 @@
 
 if sdl1.found()
-
 mmm_sdl = executable('mmm.sdl',
-      ['host.c', 'sdl.c', 'alsa-audio.c'],
+      ['host.c', 'sdl1.2.c', 'alsa-audio.c'],
       include_directories: [ rootInclude, mmmInclude ],
       link_with : mmm_lib,
       dependencies: [ sdl1, alsa, thread  ],
+      install: true
+)
+endif
+
+if sdl2.found()
+mmm_sdl2 = executable('mmm.sdl2',
+      ['host.c', 'sdl2.c', 'alsa-audio.c'],
+      include_directories: [ rootInclude, mmmInclude ],
+      link_with : mmm_lib,
+      dependencies: [ sdl2, alsa, thread  ],
       install: true
 )
 endif
@@ -37,4 +46,4 @@ mmm_kobo = executable('mmm.kobo',
       install: true
 )
 
-
+install_data(sources:'mmm', install_dir:'bin')

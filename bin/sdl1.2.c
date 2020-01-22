@@ -30,8 +30,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 typedef struct _HostSDL   HostSDL;
 
-/////////////////////////////////////////////////////////////////////
-
 struct _HostSDL
 {
   Host         host;
@@ -145,6 +143,8 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
         baseflags -= SDL_NOFRAME;
     }
     #if 1
+    if (cwidth != host->width &&  cheight != host->height)
+    {
     if ( (cwidth  && (cwidth  != host->width)) ||
          (cheight && (cheight != host->height)) ||
          (old_baseflags != baseflags))
@@ -155,6 +155,7 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       host_sdl->screen = SDL_SetVideoMode (host->width, host->height, 32,
                                            baseflags | SDL_RESIZABLE);
       old_baseflags = baseflags;
+    }
     }
 #endif
   }
@@ -211,28 +212,27 @@ Host *host_sdl_new (const char *path, int width, int height)
     return NULL;
   }
 
-
   if (width < 0)
   {
     SDL_Rect **modes;
     modes = SDL_ListModes(NULL, SDL_HWSURFACE|SDL_FULLSCREEN);
     host->fullscreen = 1;
     if (modes == (SDL_Rect**)0) {
-      width=host_width = 400;
-      height=host_height = 300;
+      width  = host_width  = 400;
+      height = host_height = 300;
     }
     else
     {
-      width=host_width = modes[0]->w - 128;
-      height=host_height = modes[0]->h - 128;
+      width  = host_width  = modes[0]->w - 128;
+      height = host_height = modes[0]->h - 128;
     }
 
   }
 
   host->width = width;
+  host->height = height;
   host->bpp = 4;
   host->stride = host->width * host->bpp;
-  host->height = height;
 
   host_sdl->screen =  SDL_SetVideoMode (host->width, host->height, 32, baseflags | SDL_RESIZABLE);
 
@@ -409,7 +409,7 @@ static int sdl_check_events (Host *host)
         }
         break;
       case SDL_VIDEORESIZE:
-        event.resize.h -= 30;
+        //event.resize.h -= 30;
         host_sdl->screen = SDL_SetVideoMode (event.resize.w,
                                              event.resize.h, 32,
                                              baseflags | SDL_RESIZABLE);
@@ -422,7 +422,8 @@ static int sdl_check_events (Host *host)
           mmm_host_set_size (host->focused->mmm,
                              host->width, host->height);
 
-        usleep (190000); /* XXX : hack - something is racy about resizing
+       // usleep (19000); 
+	/* XXX : hack - something is racy about resizing
                            this kind of fixes it - but makes still results
                            in really botched resize */
         break;

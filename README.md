@@ -6,7 +6,8 @@ graphics, audio output and input event. The mmm project provides a C library
 and a couple of sample hosts. Both clients and hosts can be statically linked,
 thus permitting a small static binary to be used with hosts for multiple
 different environments. Once the ABI is frozen; mmm clients could be a
-convenient way to distribute stand-alone GUI applications.
+convenient way to distribute stand-alone GUI applications, that only
+rely on a framebuffer.
 
 Features
 --------

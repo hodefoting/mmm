@@ -325,7 +325,6 @@ mmm_write_done (Mmm *fb, int x, int y, int width, int height)
       fb->shm->fb.damage_height = height;
     }
   }
-
   fb->shm->fb.flip_state = MMM_WAIT_FLIP;
 }
 
@@ -497,7 +496,6 @@ mmm_client_check_size (Mmm *fb, int *width, int *height)
   return ret;
 }
 
-
 // XXX: maybe inserting the hack that tramslates -1, -1 to fullscreen / default size in mmm_set_size
 void mmm_set_size (Mmm *fb, int width, int height)
 {
@@ -564,9 +562,9 @@ Mmm *mmm_new (int width, int height, MmmFlag flags, void *babl_format)
 
   //fprintf (stderr, "%i %s %ix%i\n", getpid(), __FUNCTION__, width, height);
 
-  path = getenv ("MMM_PATH");
+  path = getenv ("MMM_PATH"); // where the backing file is to be created
 
-  if (!path)
+  if (!path) // we need to launch an mmm host
   {
     char mmm_path[256];
     sprintf (mmm_path, "/tmp/mmm-%i", getpid());
@@ -751,6 +749,12 @@ static Mmm *mmm_new_shm (const char *mmm_path, int width, int height, void *babl
 void
 mmm_destroy (Mmm *fb)
 {
+  if (!fb->compositor_side)
+  {
+    char buf[1024];
+    snprintf (buf, 1023, "rm -r %s", fb->path);
+    system (buf);
+  }
   munmap (fb->shm, fb->mapped_size);
   if (fb->fd)
     close (fb->fd);
@@ -1163,7 +1167,7 @@ const char *mmm_get_message (Mmm *fb)
 }
 
 /* return the on disk path of the buffer */
-const char    *mmm_get_path (Mmm *fb)
+const char *mmm_get_path (Mmm *fb)
 {
   return fb->path;
 }
