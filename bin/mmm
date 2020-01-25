@@ -10,7 +10,7 @@ else
 
 # sdl2 is preferred over sdl1.2 as a long standing resize race is solved
 # with that host, and it is maintained for more platforms.
-  which mmm.sdl2  > /dev/null 2>&1 && mmm.sdl2 $* || mmm.sdl $*
-
+  which mmm.sdl2  > /dev/null 2>&1 && mmm.sdl2 $* && exit
+  which mmm.sdl  > /dev/null 2>&1 && mmm.sdl $* && exit
 fi
 

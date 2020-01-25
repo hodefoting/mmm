@@ -1,5 +1,5 @@
 /*
- * 2014 (c) Øyvind Kolås
+ * 2014, 2020 (c) Øyvind Kolås
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
 copyright notice and this permission notice appear in all copies.
@@ -30,15 +30,11 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 typedef struct _HostSDL   HostSDL;
 
-/////////////////////////////////////////////////////////////////////
-
 struct _HostSDL
 {
   Host          host;
   SDL_Window   *window;
   SDL_Renderer *renderer;
-  SDL_Texture  *textureSDL;
-  SDL_Surface  *screenSurface;
   SDL_Event     event;
 };
 
@@ -67,23 +63,21 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
 
   if (pixels && width && height)
   {
-    int tex_w, tex_h;
-    SDL_QueryTexture(host_sdl->textureSDL, NULL, NULL, &tex_w, &tex_h);
-    if (tex_w != width || tex_h != height)
+    if (host->width != width || host->height != height)
     {
-       SDL_DestroyTexture (host_sdl->textureSDL);
-       host_sdl->textureSDL = SDL_CreateTexture(host_sdl->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, width, height);
-
-       /* this is a workaround for resize loops, we still go a bit haywire when interactively resizing window from a corner. */
-       if (tex_w != width && tex_h != height)
-         SDL_SetWindowSize (host_sdl->window, width, height);
-       
+      SDL_SetWindowSize (host_sdl->window, width, height);
+      host->width = width;
+      host->height = height;
     }
 
-    SDL_UpdateTexture (host_sdl->textureSDL, NULL, pixels, rowstride);
-    mmm_read_done (client->mmm);
-    SDL_RenderCopy(host_sdl->renderer, host_sdl->textureSDL, NULL, NULL);
+    SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormatFrom((void*)pixels,
+		                    width, height, 4, width * 4, SDL_PIXELFORMAT_ARGB8888);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(host_sdl->renderer, surface);
+    SDL_RenderCopy(host_sdl->renderer, texture, NULL, NULL);
     SDL_RenderPresent(host_sdl->renderer);
+    SDL_DestroyTexture (texture);
+    SDL_FreeSurface (surface);
+    mmm_read_done (client->mmm);
   }
 
   mmm_host_get_size (client->mmm, &cwidth, &cheight);
@@ -171,10 +165,7 @@ Host *host_sdl_new (const char *path, int width, int height)
   host_width = width;
   host_height = height;
   host_sdl->window = SDL_CreateWindow("mmm", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
-  //SDL_SetWindowResizable (host_sdl->window, 1);
   host_sdl->renderer = SDL_CreateRenderer(host_sdl->window, -1, 0);
-  host_sdl->textureSDL = SDL_CreateTexture(host_sdl->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, width, height);
-  host_sdl->screenSurface = SDL_GetWindowSurface(host_sdl->window);
   SDL_StartTextInput();
 #if 0
   if (width < 0)
@@ -432,7 +423,7 @@ static int main_sdl (const char *path, int single)
 {
   Host *host;
   host     = host_sdl_new (path, 1024, 768);
-  //HostSDL *host_sdl = (void*)host;
+  HostSDL *host_sdl = (void*)host;
   //host_sdl = (void*) host;
   atexit (SDL_Quit);
   host->single_app = single;
@@ -473,6 +464,7 @@ static int main_sdl (const char *path, int single)
         {
           if (title) free (title);
           title = strdup (mmm_get_title (host->focused->mmm));
+	  SDL_SetWindowTitle (host_sdl->window, title);
           //SDL_WM_SetCaption (title, "mmm");
         }
       }
