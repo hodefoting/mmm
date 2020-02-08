@@ -62,7 +62,7 @@ static snd_pcm_t *alsa_open (char *dev, int rate, int channels)
 
 
 static  snd_pcm_t *h = NULL;
-
+static int paused = 0;
 
 static void *alsa_audio_start(Host *host)
 {
@@ -203,6 +203,11 @@ static void *alsa_audio_start(Host *host)
           snd_pcm_prepare(h);
           snd_pcm_wait(h, c);
         }
+	if (paused && h)
+	{
+	  if (h) snd_pcm_pause (h, 0);
+	  paused = 0;
+	}
 
         c = snd_pcm_writei(h, data, c);
         if (c < 0)
@@ -210,8 +215,13 @@ static void *alsa_audio_start(Host *host)
       }
       else
       {
+	if (!paused)
+	{
+	  if (h) snd_pcm_pause (h, 1);
+	  paused = 1;
+	}
         // TODO : shut down audio when all clients are silent?
-        usleep (10000);
+        usleep (20000);
       }
     } else {
       if (getenv("LYD_FATAL_UNDERRUNS"))
