@@ -430,6 +430,8 @@ static int main_sdl (const char *path, int single)
 
   audio_init_alsa (host); // XXX : look into implement audio output using SDL2 itself instead
 
+  int sleep_time = 500;
+
   while (!host_has_quit)
   {
     int got_event;
@@ -452,6 +454,7 @@ static int main_sdl (const char *path, int single)
       }
       //SDL_UpdateRect(host_sdl->screen, 0,0,0,0);
       host_clear_dirt (host);
+      got_event = 1;
     }
     else
     {
@@ -468,8 +471,17 @@ static int main_sdl (const char *path, int single)
           //SDL_WM_SetCaption (title, "mmm");
         }
       }
-      if (!got_event)
-        usleep (5000);
+      if (got_event)
+      {
+	sleep_time = 200;
+      }
+      else
+      {
+	if (sleep_time > 150000)
+	  sleep_time = 150000;
+        usleep (sleep_time);
+	sleep_time *= 1.5;
+      }
     }
   }
 
