@@ -36,6 +36,7 @@ struct _HostSDL
   SDL_Window   *window;
   SDL_Renderer *renderer;
   SDL_Event     event;
+  SDL_Texture  *texture;
 };
 
 static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
@@ -61,22 +62,35 @@ static void render_client (Host *host, Client *client, float ptr_x, float ptr_y)
       host->focused = client;
     }
 
+  //mmm_host_get_size (client->mmm, &cwidth, &cheight);
   if (pixels && width && height)
   {
     if (host->width != width || host->height != height)
     {
-      SDL_SetWindowSize (host_sdl->window, width, height);
+      //SDL_SetWindowSize (host_sdl->window, width, height);
+      //   window size should only be set...
+      //   if it is the client and not the user changing size
       host->width = width;
       host->height = height;
+      SDL_DestroyTexture (host_sdl->texture);
+      host_sdl->texture = SDL_CreateTexture(host_sdl->renderer,
+                               SDL_PIXELFORMAT_ARGB8888,
+                               SDL_TEXTUREACCESS_STREAMING,
+                               width, height);
     }
 
+#if 0
     SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormatFrom((void*)pixels,
 		                    width, height, 4, width * 4, SDL_PIXELFORMAT_ARGB8888);
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(host_sdl->renderer, surface);
-    SDL_RenderCopy(host_sdl->renderer, texture, NULL, NULL);
+#endif
+    //SDL_Texture *texture = SDL_CreateTextureFromSurface(host_sdl->renderer, surface);
+    SDL_UpdateTexture(host_sdl->texture, NULL, (void*)pixels, width * sizeof (Uint32));
+
+    SDL_RenderClear(host_sdl->renderer);
+    SDL_RenderCopy(host_sdl->renderer, host_sdl->texture, NULL, NULL);
     SDL_RenderPresent(host_sdl->renderer);
-    SDL_DestroyTexture (texture);
-    SDL_FreeSurface (surface);
+    //SDL_DestroyTexture (texture);
+    //SDL_FreeSurface (surface);
     mmm_read_done (client->mmm);
   }
 
@@ -167,6 +181,13 @@ Host *host_sdl_new (const char *path, int width, int height)
   host_sdl->window = SDL_CreateWindow("mmm", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   host_sdl->renderer = SDL_CreateRenderer(host_sdl->window, -1, 0);
   SDL_StartTextInput();
+
+  host_sdl->texture = SDL_CreateTexture(host_sdl->renderer,
+                               SDL_PIXELFORMAT_ARGB8888,
+                               SDL_TEXTUREACCESS_STREAMING,
+                               width, height);
+
+
 #if 0
   if (width < 0)
   {
