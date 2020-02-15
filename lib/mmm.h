@@ -74,6 +74,8 @@ void           mmm_set_title            (Mmm *fb, const char *title);
 const char *   mmm_get_title            (Mmm *fb);
 
 /* these with a key of "title" should replace the title
+ * and be used with "clipboard" for clipboard, hosts can recognize the
+ * existance of the "clipboard" key and enable clipboard handling.
  */
 void           mmm_set_value            (Mmm *fb, const char *key, const char *value);
 const char *   mmm_get_value            (Mmm *fb, const char *key);
@@ -153,7 +155,9 @@ void           mmm_warp_cursor      (Mmm *fb, int x, int y);
  */
 long           mmm_ticks       (void);
 
-/* message queue:  */
+/* message queue:
+ *   messages that some hosts accepts:
+ */
 void           mmm_add_message      (Mmm *fb, const char *message);
 int            mmm_has_message      (Mmm *fb);
 const char    *mmm_get_message      (Mmm *fb);

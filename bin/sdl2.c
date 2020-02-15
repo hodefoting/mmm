@@ -412,10 +412,6 @@ static int sdl_check_events (Host *host)
     }
     got_event = 1;
   }
-  if (!got_event)
-  {
-    usleep (16000);
-  }
   return got_event;
 }
 
@@ -432,13 +428,19 @@ static int main_sdl (const char *path, int single)
 
   int sleep_time = 500;
 
+  int iter = 0;
   while (!host_has_quit)
   {
-    int got_event;
+    int got_event = 0;
 
     got_event = sdl_check_events (host);
-    host_idle_check (host);
-    host_monitor_dir (host);
+    host_idle_check (host); // this update if the host is dirty
+
+    if (iter ++ % 10 == 0) // we do not need to do it frequently
+      host_monitor_dir (host);
+
+    if (got_event)
+      sleep_time = 10000;
 
     if (host_is_dirty (host)) {
       int x, y;
@@ -452,11 +454,10 @@ static int main_sdl (const char *path, int single)
       {
         render_client (host, l->data, x, y);
       }
-      //SDL_UpdateRect(host_sdl->screen, 0,0,0,0);
       host_clear_dirt (host);
       got_event = 1;
     }
-    else
+    //else
     {
       if (host->single_app && !host->focused)
         host->focused = host->clients?host->clients->data:NULL;
@@ -473,12 +474,13 @@ static int main_sdl (const char *path, int single)
       }
       if (got_event)
       {
-	sleep_time = 200;
+	if (sleep_time > 30000)
+	  sleep_time = 30000;
       }
       else
       {
-	if (sleep_time > 150000)
-	  sleep_time = 150000;
+	if (sleep_time > 1500000)
+	  sleep_time = 1500000;
         usleep (sleep_time);
 	sleep_time *= 1.5;
       }
