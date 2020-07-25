@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+apiversion=0.1
+
+Name: mmm
+Description: Memory Mapped Machine
+Version: 0.1.1
+Libs: -L${libdir} -lmmm
+Cflags: -I${includedir}
